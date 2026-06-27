@@ -19,7 +19,7 @@
   const officeLat   = parseFloat(btn.dataset.lat);
   const officeLng   = parseFloat(btn.dataset.lng);
   const radius      = parseInt(btn.dataset.radius, 10);
-  const threshold   = parseFloat(btn.dataset.threshold) || 0.5;
+  const threshold   = parseFloat(btn.dataset.threshold) || 0.6;
   const hasFace     = btn.dataset.hasFace === '1';
   const type        = btn.dataset.type;
 

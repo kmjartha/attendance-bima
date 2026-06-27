@@ -49,7 +49,7 @@ class AbsensiController extends Controller
             'user_shifts' => $userShifts,
             'mode'        => $mode,
             'has_face'    => $hasFace,
-            'face_thresh' => App::$config['face']['distance_threshold'] ?? 0.50,
+            'face_thresh' => App::$config['face']['distance_threshold'] ?? 0.60,
         ], $layout);
     }
 
@@ -91,7 +91,7 @@ class AbsensiController extends Controller
         }
 
         // Validasi face match (server-side double-check bila descriptor live dikirim)
-        $threshold = (float)(App::$config['face']['distance_threshold'] ?? 0.50);
+        $threshold = (float)(App::$config['face']['distance_threshold'] ?? 0.60);
         $serverDist = null;
         if ($me['face_descriptor'] && $clientDesc) {
             $live = json_decode($clientDesc, true);
