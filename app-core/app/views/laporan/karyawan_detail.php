@@ -16,19 +16,11 @@ $totalHari = array_sum(array_map('intval', $summary));
     </div>
   </div>
   <form method="get" class="d-flex gap-2">
-    <select name="month" class="form-select form-select-sm">
-      <?php for ($i=1;$i<=12;$i++): ?>
-        <option value="<?= $i ?>" <?= $i===$month?'selected':'' ?>><?= $bulan[$i] ?></option>
-      <?php endfor; ?>
-    </select>
-    <select name="year" class="form-select form-select-sm">
-      <?php for ($y=(int)date('Y'); $y>=(int)date('Y')-3; $y--): ?>
-        <option value="<?= $y ?>" <?= $y===$year?'selected':'' ?>><?= $y ?></option>
-      <?php endfor; ?>
-    </select>
+    <input type="date" name="start_date" class="form-control form-control-sm" value="<?= e($startDate) ?>">
+    <input type="date" name="end_date" class="form-control form-control-sm" value="<?= e($endDate) ?>">
     <button class="btn btn-primary btn-sm">Tampilkan</button>
     <a class="btn btn-success btn-sm"
-       href="<?= url("/laporan/karyawan/{$karyawan['id']}/export?month={$month}&year={$year}") ?>">
+       href="<?= url("/laporan/karyawan/{$karyawan['id']}/export?start_date={$startDate}&end_date={$endDate}") ?>">
       <i class="bi bi-file-earmark-excel-fill"></i> Excel
     </a>
   </form>
@@ -59,7 +51,7 @@ $totalHari = array_sum(array_map('intval', $summary));
 <div class="row g-3">
   <div class="col-lg-7">
     <div class="card-soft p-3">
-      <div class="fw-semibold mb-2">Tren Harian — <?= e($bulan[$month]) ?> <?= (int)$year ?></div>
+      <div class="fw-semibold mb-2">Tren Harian — <?= e(format_date_id($startDate)) ?> - <?= e(format_date_id($endDate)) ?></div>
       <canvas id="chartHadir" height="120"></canvas>
     </div>
   </div>

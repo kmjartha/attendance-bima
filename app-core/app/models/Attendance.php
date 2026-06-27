@@ -46,6 +46,22 @@ class Attendance extends Model
                 return $stmt->fetchAll();
     }
 
+    public function historyRange(int $userId, string $startDate, string $endDate): array
+    {
+        $stmt = $this->db()->prepare(
+            "SELECT a.*, s.nama AS shift_nama, s.jam_masuk AS shift_jam_masuk, s.toleransi_menit,
+                    IF(a.jam_masuk IS NULL, NULL,
+                        GREATEST(0, TIMESTAMPDIFF(MINUTE, CONCAT(a.tanggal, ' ', s.jam_masuk), a.jam_masuk) - s.toleransi_menit)
+                    ) AS terlambat_menit
+             FROM attendances a
+             LEFT JOIN shifts s ON s.id = a.shift_id
+             WHERE a.user_id = ? AND a.tanggal BETWEEN ? AND ?
+             ORDER BY a.tanggal DESC"
+        );
+        $stmt->execute([$userId, $startDate, $endDate]);
+        return $stmt->fetchAll();
+    }
+
         /** Daily report for HRD view — include all active users, with 'belum_absen' status for missing records */
         public function dailyReport(string $date): array
         {
@@ -99,6 +115,19 @@ class Attendance extends Model
              GROUP BY status"
         );
         $stmt->execute([$userId, $month, $year]);
+        $out = ['hadir'=>0,'telat'=>0,'izin'=>0,'sakit'=>0,'alpha'=>0];
+        foreach ($stmt->fetchAll() as $r) $out[$r['status']] = (int)$r['total'];
+        return $out;
+    }
+
+    public function summaryRange(int $userId, string $startDate, string $endDate): array
+    {
+        $stmt = $this->db()->prepare(
+            "SELECT status, COUNT(*) AS total
+             FROM attendances WHERE user_id = ? AND tanggal BETWEEN ? AND ?
+             GROUP BY status"
+        );
+        $stmt->execute([$userId, $startDate, $endDate]);
         $out = ['hadir'=>0,'telat'=>0,'izin'=>0,'sakit'=>0,'alpha'=>0];
         foreach ($stmt->fetchAll() as $r) $out[$r['status']] = (int)$r['total'];
         return $out;
@@ -190,6 +219,37 @@ class Attendance extends Model
              ORDER BY r.name, u.nama"
         );
         $stmt->execute([$month, $year]);
+        return $stmt->fetchAll();
+    }
+
+    public function rekapRange(string $startDate, string $endDate): array
+    {
+        $stmt = $this->db()->prepare(
+            "SELECT u.id, u.niy, u.nama, r.name AS role_name,
+                    SUM(a.status='hadir') AS hadir,
+                    SUM(a.status='telat') AS telat,
+                    SUM(a.status IN ('hadir','telat')) AS total_hadir,
+                    SUM(a.status='izin')  AS izin,
+                    SUM(a.status='sakit') AS sakit,
+                    SUM(a.status='alpha') AS alpha,
+                    SUM(
+                        IF(a.status='telat' AND a.jam_masuk IS NOT NULL AND s.jam_masuk IS NOT NULL,
+                            GREATEST(0, TIMESTAMPDIFF(MINUTE, CONCAT(a.tanggal, ' ', s.jam_masuk), a.jam_masuk) - s.toleransi_menit),
+                            0
+                        )
+                    ) AS menit_telat,
+                    COUNT(a.id) AS total
+             FROM users u
+             JOIN roles r ON r.id = u.role_id
+             LEFT JOIN attendances a
+                ON a.user_id = u.id
+               AND a.tanggal BETWEEN ? AND ?
+             LEFT JOIN shifts s ON s.id = a.shift_id
+             WHERE u.is_active = 1
+             GROUP BY u.id
+             ORDER BY r.name, u.nama"
+        );
+        $stmt->execute([$startDate, $endDate]);
         return $stmt->fetchAll();
     }
 }

@@ -49,12 +49,23 @@ class LaporanController extends Controller
             http_response_code(403);
             return $this->render('errors.403', ['title'=>'403'], 'auth');
         }
-        $month = (int)($_GET['month'] ?? date('n'));
-        $year  = (int)($_GET['year']  ?? date('Y'));
-        $q     = trim((string)($_GET['q'] ?? ''));
-        $role  = trim((string)($_GET['role'] ?? ''));
 
-        $rows = (new Attendance())->rekapPeriode($month, $year);
+        $startDate = trim((string)($_GET['start_date'] ?? date('Y-m-01')));
+        $endDate   = trim((string)($_GET['end_date']   ?? date('Y-m-t')));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) || !strtotime($startDate)) {
+            $startDate = date('Y-m-01');
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate) || !strtotime($endDate)) {
+            $endDate = date('Y-m-t');
+        }
+        if ($startDate > $endDate) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
+
+        $q    = trim((string)($_GET['q'] ?? ''));
+        $role = trim((string)($_GET['role'] ?? ''));
+
+        $rows = (new Attendance())->rekapRange($startDate, $endDate);
         if ($q !== '') {
             $needle = mb_strtolower($q);
             $rows = array_values(array_filter($rows, fn($r) =>
@@ -67,12 +78,12 @@ class LaporanController extends Controller
         }
 
         return $this->render('laporan.karyawan', [
-            'title' => 'Laporan Karyawan',
-            'rows'  => $rows,
-            'month' => $month,
-            'year'  => $year,
-            'q'     => $q,
-            'role'  => $role,
+            'title'     => 'Laporan Karyawan',
+            'rows'      => $rows,
+            'startDate' => $startDate,
+            'endDate'   => $endDate,
+            'q'         => $q,
+            'role'      => $role,
         ]);
     }
 
@@ -89,32 +100,44 @@ class LaporanController extends Controller
             http_response_code(404);
             return $this->render('errors.404', ['title'=>'404'], 'auth');
         }
-        $month = (int)($_GET['month'] ?? date('n'));
-        $year  = (int)($_GET['year']  ?? date('Y'));
+
+        $startDate = trim((string)($_GET['start_date'] ?? date('Y-m-01')));
+        $endDate   = trim((string)($_GET['end_date']   ?? date('Y-m-t')));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) || !strtotime($startDate)) {
+            $startDate = date('Y-m-01');
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate) || !strtotime($endDate)) {
+            $endDate = date('Y-m-t');
+        }
+        if ($startDate > $endDate) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
 
         $att     = new Attendance();
-        $summary = $att->summaryMonth($id, $month, $year);
-        $history = $att->history($id, $month, $year);
+        $summary = $att->summaryRange($id, $startDate, $endDate);
+        $history = $att->historyRange($id, $startDate, $endDate);
 
-        // Daily series untuk Chart.js
+        $labels = $hadirSeries = $telatSeries = [];
+        $cursor = strtotime($startDate);
+        $endTs  = strtotime($endDate);
         $byDay = [];
         foreach ($history as $h) {
-            $byDay[(int)date('j', strtotime($h['tanggal']))] = $h['status'];
+            $byDay[$h['tanggal']] = $h['status'];
         }
-        $daysInMonth = (int)date('t', strtotime("$year-$month-01"));
-        $labels = $hadirSeries = $telatSeries = [];
-        for ($d = 1; $d <= $daysInMonth; $d++) {
-            $labels[]      = (string)$d;
-            $st = $byDay[$d] ?? '';
+        while ($cursor <= $endTs) {
+            $dayKey = date('Y-m-d', $cursor);
+            $labels[] = date('d M', $cursor);
+            $st = $byDay[$dayKey] ?? '';
             $hadirSeries[] = $st === 'hadir' ? 1 : 0;
             $telatSeries[] = $st === 'telat' ? 1 : 0;
+            $cursor += 86400;
         }
 
         return $this->render('laporan.karyawan_detail', [
             'title'       => 'Laporan: ' . $karyawan['nama'],
             'karyawan'    => $karyawan,
-            'month'       => $month,
-            'year'        => $year,
+            'startDate'   => $startDate,
+            'endDate'     => $endDate,
             'summary'     => $summary,
             'history'     => $history,
             'labels'      => $labels,
@@ -257,11 +280,22 @@ class LaporanController extends Controller
             http_response_code(403);
             return $this->render('errors.403', ['title'=>'403'], 'auth');
         }
-        $month = (int)($_GET['month'] ?? date('n'));
-        $year  = (int)($_GET['year']  ?? date('Y'));
-        $q     = trim((string)($_GET['q'] ?? ''));
-        $role  = trim((string)($_GET['role'] ?? ''));
-        $rows  = (new Attendance())->rekapPeriode($month, $year);
+
+        $startDate = trim((string)($_GET['start_date'] ?? date('Y-m-01')));
+        $endDate   = trim((string)($_GET['end_date']   ?? date('Y-m-t')));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) || !strtotime($startDate)) {
+            $startDate = date('Y-m-01');
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate) || !strtotime($endDate)) {
+            $endDate = date('Y-m-t');
+        }
+        if ($startDate > $endDate) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
+
+        $q    = trim((string)($_GET['q'] ?? ''));
+        $role = trim((string)($_GET['role'] ?? ''));
+        $rows = (new Attendance())->rekapRange($startDate, $endDate);
 
         if ($q !== '') {
             $needle = mb_strtolower($q);
@@ -274,18 +308,18 @@ class LaporanController extends Controller
             $rows = array_values(array_filter($rows, fn($r) => $r['role_name'] === $role));
         }
 
-        $bulan = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-        $fname = "Laporan_Absensi_{$bulan[$month]}_{$year}.xls";
+        $periodLabel = format_date_id($startDate) . ' s.d. ' . format_date_id($endDate);
+        $fname = "Laporan_Absensi_{$startDate}_{$endDate}.xls";
         $this->excelHeaders($fname);
 
         $html  = $this->excelStyles();
-        $html .= "<h2>Laporan Rekap Absensi — {$bulan[$month]} {$year}</h2>";
+        $html .= "<h2>Laporan Rekap Absensi — {$periodLabel}</h2>";
         $html .= "<p>Dicetak: " . date('d-m-Y H:i') . " · Total karyawan aktif: " . count($rows) . "</p>";
         $html .= '<table><thead><tr>'
                . '<th>NIY</th><th>Nama</th><th>Role</th>'
-               . '<th>Hadir</th><th>Telat</th><th>Izin</th><th>Sakit</th><th>Alpha</th><th>Total</th>'
+               . '<th>Hadir</th><th>Telat</th><th>Menit Telat</th><th>Izin</th><th>Sakit</th><th>Alpha</th><th>Total Hadir</th>'
                . '</tr></thead><tbody>';
-        $tot = ['hadir'=>0,'telat'=>0,'izin'=>0,'sakit'=>0,'alpha'=>0,'total'=>0];
+        $tot = ['hadir'=>0,'telat'=>0,'menit_telat'=>0,'izin'=>0,'sakit'=>0,'alpha'=>0,'total_hadir'=>0];
         foreach ($rows as $r) {
             foreach (array_keys($tot) as $k) $tot[$k] += (int)$r[$k];
             $html .= '<tr>'
@@ -294,16 +328,17 @@ class LaporanController extends Controller
                    . '<td>'.htmlspecialchars($r['role_name']).'</td>'
                    . '<td>'.(int)$r['hadir'].'</td>'
                    . '<td>'.(int)$r['telat'].'</td>'
+                   . '<td>'.(int)$r['menit_telat'].'</td>'
                    . '<td>'.(int)$r['izin'].'</td>'
                    . '<td>'.(int)$r['sakit'].'</td>'
                    . '<td>'.(int)$r['alpha'].'</td>'
-                   . '<td>'.(int)$r['total'].'</td>'
+                   . '<td>'.(int)$r['total_hadir'].'</td>'
                    . '</tr>';
         }
         $html .= '</tbody><tfoot><tr><td colspan="3">TOTAL</td>'
-               . '<td>'.$tot['hadir'].'</td><td>'.$tot['telat'].'</td>'
+               . '<td>'.$tot['hadir'].'</td><td>'.$tot['telat'].'</td><td>'.$tot['menit_telat'].'</td>'
                . '<td>'.$tot['izin'].'</td><td>'.$tot['sakit'].'</td>'
-               . '<td>'.$tot['alpha'].'</td><td>'.$tot['total'].'</td></tr></tfoot></table>';
+               . '<td>'.$tot['alpha'].'</td><td>'.$tot['total_hadir'].'</td></tr></tfoot></table>';
         $html .= '</body></html>';
         echo $html;
         return '';
@@ -319,20 +354,30 @@ class LaporanController extends Controller
         $karyawan = (new User())->findWithRole($id);
         if (!$karyawan) { http_response_code(404); return ''; }
 
-        $month = (int)($_GET['month'] ?? date('n'));
-        $year  = (int)($_GET['year']  ?? date('Y'));
-        $att   = new Attendance();
-        $sum   = $att->summaryMonth($id, $month, $year);
-        $hist  = $att->history($id, $month, $year);
+        $startDate = trim((string)($_GET['start_date'] ?? date('Y-m-01')));
+        $endDate   = trim((string)($_GET['end_date']   ?? date('Y-m-t')));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) || !strtotime($startDate)) {
+            $startDate = date('Y-m-01');
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate) || !strtotime($endDate)) {
+            $endDate = date('Y-m-t');
+        }
+        if ($startDate > $endDate) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
 
-        $bulan = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-        $fname = "Laporan_{$karyawan['niy']}_{$bulan[$month]}_{$year}.xls";
+        $att   = new Attendance();
+        $sum   = $att->summaryRange($id, $startDate, $endDate);
+        $hist  = $att->historyRange($id, $startDate, $endDate);
+
+        $periodLabel = format_date_id($startDate) . ' s.d. ' . format_date_id($endDate);
+        $fname = "Laporan_{$karyawan['niy']}_{$startDate}_{$endDate}.xls";
         $this->excelHeaders($fname);
 
         $html  = $this->excelStyles();
         $html .= "<h2>Laporan Absensi — " . htmlspecialchars($karyawan['nama']) . "</h2>";
         $html .= "<p>NIY: <b>" . htmlspecialchars($karyawan['niy']) . "</b> · Role: " . htmlspecialchars($karyawan['role_name'])
-              . " · Periode: <b>{$bulan[$month]} {$year}</b></p>";
+              . " · Periode: <b>{$periodLabel}</b></p>";
 
         $html .= '<h3>Ringkasan</h3><table><thead><tr>'
               . '<th>Hadir</th><th>Telat</th><th>Izin</th><th>Sakit</th><th>Alpha</th><th>Total</th>'
