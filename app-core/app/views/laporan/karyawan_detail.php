@@ -68,13 +68,13 @@ $totalHari = array_sum(array_map('intval', $summary));
   <table class="table align-middle mb-0">
     <thead style="background:var(--surface-2)">
       <tr>
-        <th>Tanggal</th><th>Shift</th><th>Masuk</th><th>Menit Telat</th><th>Pulang</th>
+        <th>Tanggal</th><th>Shift</th><th>Masuk</th><th>Menit Telat</th><th>Alasan Telat</th><th>Pulang</th>
         <th class="text-center">Status</th><th class="text-end">Match</th>
       </tr>
     </thead>
     <tbody>
       <?php if (!$history): ?>
-        <tr><td colspan="6" class="text-center text-muted-soft py-4">Belum ada absensi pada periode ini.</td></tr>
+        <tr><td colspan="8" class="text-center text-muted-soft py-4">Belum ada absensi pada periode ini.</td></tr>
       <?php endif; ?>
       <?php foreach ($history as $h): ?>
         <tr>
@@ -82,6 +82,7 @@ $totalHari = array_sum(array_map('intval', $summary));
           <td class="text-muted-soft"><?= e($h['shift_nama'] ?? '-') ?></td>
           <td><?= e(time_only($h['jam_masuk'])) ?></td>
           <td class="text-center"><?= isset($h['terlambat_menit']) && $h['terlambat_menit']!==null ? (int)$h['terlambat_menit'] : '—' ?></td>
+          <td><?= $h['status'] === 'telat' && !empty($h['keterangan']) ? e($h['keterangan']) : '—' ?></td>
           <td><?= $h['jam_keluar'] ? e(time_only($h['jam_keluar'])) : '—' ?></td>
           <td class="text-center"><?= status_badge($h['status']) ?></td>
           <td class="text-end text-muted-soft">
