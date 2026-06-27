@@ -1,6 +1,10 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Blokir akses ke app-core/ SEBELUM rule lain dievaluasi (lapis kedua,
+    # selain .htaccess Deny di dalam app-core/ itu sendiri)
+    RewriteRule ^app-core/ - [F,L]
+
     # Allow direct access to existing files
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
@@ -22,9 +26,3 @@ Options -Indexes
 <FilesMatch "\.(env|ini|log|sql)$">
     Require all denied
 </FilesMatch>
-
-# Lapis pertahanan kedua: blokir folder app-core/ juga dari sini,
-# selain .htaccess di dalam folder itu sendiri.
-<IfModule mod_rewrite.c>
-    RewriteRule ^app-core/ - [F,L]
-</IfModule>
