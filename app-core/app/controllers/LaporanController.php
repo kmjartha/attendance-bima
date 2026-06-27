@@ -391,7 +391,7 @@ class LaporanController extends Controller
               . '</tr></tbody></table>';
 
           $html .= '<h3>Detail Harian</h3><table><thead><tr>'
-              . '<th>Tanggal</th><th>Shift</th><th>Jam Masuk</th><th>Menit Telat</th><th>Jam Keluar</th>'
+              . '<th>Tanggal</th><th>Shift</th><th>Jam Masuk</th><th>Menit Telat</th><th>Alasan Telat</th><th>Jam Keluar</th>'
               . '<th>Status</th><th>Match Score</th>'
               . '</tr></thead><tbody>';
         foreach ($hist as $h) {
@@ -400,13 +400,14 @@ class LaporanController extends Controller
                   . '<td>'.htmlspecialchars((string)($h['shift_nama'] ?? '-')).'</td>'
                 . '<td>'.htmlspecialchars((string)($h['jam_masuk'] ?? '-')).'</td>'
                 . '<td>'.(isset($h['terlambat_menit']) && $h['terlambat_menit']!==null ? (int)$h['terlambat_menit'] : '-').'</td>'
+                . '<td>'.htmlspecialchars($h['status'] === 'telat' && !empty($h['keterangan']) ? $h['keterangan'] : '-').'</td>'
                 . '<td>'.htmlspecialchars((string)($h['jam_keluar'] ?? '-')).'</td>'
                   . '<td>'.htmlspecialchars(strtoupper($h['status'])).'</td>'
                   . '<td>'.(isset($h['face_match_score']) && $h['face_match_score']!==null
                             ? number_format((float)$h['face_match_score'],3) : '-').'</td>'
                   . '</tr>';
         }
-        if (!$hist) $html .= '<tr><td colspan="6">Tidak ada data absensi pada periode ini.</td></tr>';
+        if (!$hist) $html .= '<tr><td colspan="8">Tidak ada data absensi pada periode ini.</td></tr>';
         $html .= '</tbody></table></body></html>';
         echo $html;
         return '';
