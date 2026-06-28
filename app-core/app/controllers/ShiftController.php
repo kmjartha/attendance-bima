@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Core\Validator;
 use App\Models\Shift;
+use App\Models\User;
+use App\Models\UserShift;
 
 class ShiftController extends Controller
 {
@@ -32,7 +34,28 @@ class ShiftController extends Controller
         return $this->render('shift.index', [
             'title'  => 'Master Shift Kerja',
             'shifts' => (new Shift())->all('jam_masuk ASC'),
+            'users'  => (new User())->allWithRole(),
+            'assignedUserIds' => (new UserShift())->assignedUserIdsByShift(),
         ]);
+    }
+
+    public function assign(string $id): string
+    {
+        $this->guard();
+        $shiftId = (int)$id;
+        if (!(new Shift())->find($shiftId)) {
+            return $this->redirect('/shift');
+        }
+
+        $userIds = (array)($_POST['user_ids'] ?? []);
+        if (empty($userIds)) {
+            $this->flash('error', 'Pilih minimal satu karyawan untuk assign shift.');
+            return $this->redirect('/shift');
+        }
+
+        (new UserShift())->assignShiftToUsers($shiftId, $userIds);
+        $this->flash('success', 'Shift berhasil diassign ke karyawan terpilih.');
+        return $this->redirect('/shift');
     }
 
     public function store(): string

@@ -36,6 +36,7 @@ $router->post('/karyawan/{id}/delete',  'KaryawanController@destroy', [AuthMiddl
 // ========= Master Shift (HRD) =========
 $router->get ('/shift',                'ShiftController@index',   [AuthMiddleware::class]);
 $router->post('/shift/create',         'ShiftController@store',   [AuthMiddleware::class, CsrfMiddleware::class]);
+$router->post('/shift/{id}/assign',     'ShiftController@assign',  [AuthMiddleware::class, CsrfMiddleware::class]);
 $router->post('/shift/{id}/edit',      'ShiftController@update',  [AuthMiddleware::class, CsrfMiddleware::class]);
 $router->post('/shift/{id}/delete',    'ShiftController@destroy', [AuthMiddleware::class, CsrfMiddleware::class]);
 

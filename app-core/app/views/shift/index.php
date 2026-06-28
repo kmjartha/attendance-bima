@@ -31,9 +31,18 @@
         <div><i class="bi bi-sunset text-primary"></i> Keluar <strong><?= substr($s['jam_keluar'],0,5) ?></strong></div>
         <div><i class="bi bi-stopwatch text-danger"></i> Toleransi <strong><?= (int)$s['toleransi_menit'] ?> mnt</strong></div>
       </div>
+      <div class="mb-3 text-muted-soft small">
+        <?= count($assignedUserIds[$s['id']] ?? []) ?> karyawan ditugaskan
+      </div>
 
       <?php if (has_role('HRD')): ?>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="button" class="btn btn-outline-primary flex-grow-1 btn-assign-shift"
+                  data-id="<?= $s['id'] ?>"
+                  data-name="<?= e($s['nama']) ?>"
+                  data-assigned="<?= implode(',', $assignedUserIds[$s['id']] ?? []) ?>">
+            <i class="bi bi-person-plus"></i> Assign Shift
+          </button>
           <button class="btn btn-light flex-grow-1 btn-edit-shift"
                   data-id="<?= $s['id'] ?>"
                   data-nama="<?= e($s['nama']) ?>"
@@ -89,6 +98,38 @@
   </div>
 </div>
 
+<!-- Modal Assign Shift -->
+<div class="modal fade" id="modal-shift-assign" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <form method="post" action="" id="form-assign-shift" class="modal-content">
+      <?= csrf_field() ?>
+      <div class="modal-header">
+        <h5 class="modal-title">Assign Shift</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Pilih karyawan yang akan diberi shift <strong id="assign-shift-name"></strong>.</p>
+        <div class="mb-3">
+          <div style="max-height: 320px; overflow-y: auto; border: 1px solid #eceff3; border-radius: 0.75rem; padding: 12px; background: #f8f9fa;">
+            <?php foreach ($users as $u): ?>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="user_ids[]" id="assign_user_<?= $u['id'] ?>" value="<?= $u['id'] ?>">
+                <label class="form-check-label" for="assign_user_<?= $u['id'] ?>">
+                  <?= e($u['nama']) ?> <span class="text-muted">(<?= e($u['niy']) ?>, <?= e($u['role_name']) ?>)</span>
+                </label>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+        <button type="submit" class="btn btn-primary">Assign ke Karyawan Terpilih</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const modal = new bootstrap.Modal('#modal-shift-edit');
@@ -103,6 +144,23 @@ document.addEventListener('DOMContentLoaded', () => {
       form.querySelector('[name=cut_off_tanggal]').value = btn.dataset.cut;
       form.querySelector('[name=is_active]').checked = btn.dataset.active === '1';
       modal.show();
+    });
+  });
+
+  const assignModal = new bootstrap.Modal('#modal-shift-assign');
+  const assignForm = document.getElementById('form-assign-shift');
+  const assignTitle = document.getElementById('assign-shift-name');
+  const userCheckboxes = assignForm.querySelectorAll('input[name="user_ids[]"]');
+
+  document.querySelectorAll('.btn-assign-shift').forEach(btn => {
+    btn.addEventListener('click', () => {
+      assignForm.action = '<?= url('/shift') ?>/' + btn.dataset.id + '/assign';
+      assignTitle.textContent = btn.dataset.name;
+      const assignedIds = btn.dataset.assigned ? btn.dataset.assigned.split(',').filter(Boolean).map(Number) : [];
+      userCheckboxes.forEach(input => {
+        input.checked = assignedIds.includes(Number(input.value));
+      });
+      assignModal.show();
     });
   });
 });

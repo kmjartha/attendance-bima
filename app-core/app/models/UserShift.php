@@ -27,6 +27,38 @@ class UserShift extends Model
         }
     }
 
+    /** Assign a single shift to multiple users without removing their other assignments. */
+    public function assignShiftToUsers(int $shiftId, array $userIds): void
+    {
+        $userIds = array_values(array_unique(array_map('intval', array_filter($userIds))));
+        if (empty($userIds)) return;
+
+        $db = $this->db();
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $stmt = $db->prepare("SELECT user_id, shift_id FROM user_shifts WHERE user_id IN ($placeholders)");
+        $stmt->execute($userIds);
+
+        $existing = [];
+        $hasExisting = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $existing[(int)$row['user_id']][] = (int)$row['shift_id'];
+            $hasExisting[(int)$row['user_id']] = true;
+        }
+
+        $stmtCount = $db->prepare("SELECT COUNT(*) FROM user_shifts WHERE user_id = ?");
+        $stmtInsert = $db->prepare("INSERT INTO user_shifts (user_id, shift_id, is_default) VALUES (?, ?, ?)");
+
+        foreach ($userIds as $userId) {
+            if (isset($existing[$userId]) && in_array($shiftId, $existing[$userId], true)) {
+                continue;
+            }
+
+            $stmtCount->execute([$userId]);
+            $isDefault = ((int)$stmtCount->fetchColumn() === 0) ? 1 : 0;
+            $stmtInsert->execute([$userId, $shiftId, $isDefault]);
+        }
+    }
+
     /** Backwards-compatible single shift assignment. */
     public function setDefault(int $userId, int $shiftId): void
     {
@@ -61,5 +93,15 @@ class UserShift extends Model
         );
         $stmt->execute([$userId]);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function assignedUserIdsByShift(): array
+    {
+        $rows = $this->db()->query("SELECT shift_id, user_id FROM user_shifts ORDER BY shift_id ASC, user_id ASC")->fetchAll();
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int)$row['shift_id']][] = (int)$row['user_id'];
+        }
+        return $result;
     }
 }
