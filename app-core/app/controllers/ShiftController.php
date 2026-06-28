@@ -47,13 +47,15 @@ class ShiftController extends Controller
             return $this->redirect('/shift');
         }
 
-        $userIds = (array)($_POST['user_ids'] ?? []);
+        $userIds = array_values(array_unique(array_map('intval', (array)($_POST['user_ids'] ?? []))));
         if (empty($userIds)) {
-            $this->flash('error', 'Pilih minimal satu karyawan untuk assign shift.');
+            // Jika tidak ada user yang dipilih, hapus semua assignment shift ini.
+            (new UserShift())->setUsersForShift($shiftId, []);
+            $this->flash('success', 'Semua karyawan berhasil dihapus dari shift ini.');
             return $this->redirect('/shift');
         }
 
-        (new UserShift())->assignShiftToUsers($shiftId, $userIds);
+        (new UserShift())->setUsersForShift($shiftId, $userIds);
         $this->flash('success', 'Shift berhasil diassign ke karyawan terpilih.');
         return $this->redirect('/shift');
     }

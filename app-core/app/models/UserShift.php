@@ -39,10 +39,8 @@ class UserShift extends Model
         $stmt->execute($userIds);
 
         $existing = [];
-        $hasExisting = [];
         foreach ($stmt->fetchAll() as $row) {
             $existing[(int)$row['user_id']][] = (int)$row['shift_id'];
-            $hasExisting[(int)$row['user_id']] = true;
         }
 
         $stmtCount = $db->prepare("SELECT COUNT(*) FROM user_shifts WHERE user_id = ?");
@@ -57,6 +55,61 @@ class UserShift extends Model
             $isDefault = ((int)$stmtCount->fetchColumn() === 0) ? 1 : 0;
             $stmtInsert->execute([$userId, $shiftId, $isDefault]);
         }
+    }
+
+    public function userIdsForShift(int $shiftId): array
+    {
+        $stmt = $this->db()->prepare("SELECT user_id FROM user_shifts WHERE shift_id = ?");
+        $stmt->execute([$shiftId]);
+        return array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
+    }
+
+    public function setUsersForShift(int $shiftId, array $userIds): void
+    {
+        $userIds = array_values(array_unique(array_map('intval', array_filter($userIds))));
+        $db = $this->db();
+
+        // Remove all current assignments for this shift.
+        $db->prepare("DELETE FROM user_shifts WHERE shift_id = ?")->execute([$shiftId]);
+
+        if (empty($userIds)) {
+            return;
+        }
+
+        // Determine whether each user already has shifts. If not, mark this one as default.
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $stmtCount = $db->prepare("SELECT user_id, COUNT(*) AS total FROM user_shifts WHERE user_id IN ($placeholders) GROUP BY user_id");
+        $stmtCount->execute($userIds);
+
+        $existingCounts = [];
+        foreach ($stmtCount->fetchAll() as $row) {
+            $existingCounts[(int)$row['user_id']] = (int)$row['total'];
+        }
+
+        $stmtInsert = $db->prepare("INSERT INTO user_shifts (user_id, shift_id, is_default) VALUES (?, ?, ?)");
+        foreach ($userIds as $userId) {
+            $isDefault = empty($existingCounts[$userId]) ? 1 : 0;
+            $stmtInsert->execute([$userId, $shiftId, $isDefault]);
+        }
+    }
+
+    private function ensureDefaultForUser(int $userId): void
+    {
+        $stmt = $this->db()->prepare("SELECT id FROM user_shifts WHERE user_id = ? AND is_default = 1 LIMIT 1");
+        $stmt->execute([$userId]);
+        if ($stmt->fetchColumn()) {
+            return;
+        }
+
+        $stmt = $this->db()->prepare("SELECT id FROM user_shifts WHERE user_id = ? ORDER BY id ASC LIMIT 1");
+        $stmt->execute([$userId]);
+        $rowId = $stmt->fetchColumn();
+        if (!$rowId) {
+            return;
+        }
+
+        $stmt = $this->db()->prepare("UPDATE user_shifts SET is_default = 1 WHERE id = ?");
+        $stmt->execute([$rowId]);
     }
 
     /** Backwards-compatible single shift assignment. */
