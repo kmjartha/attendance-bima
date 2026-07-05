@@ -57,22 +57,65 @@
     return parts[0] * 60 + parts[1];
   }
 
+  /**
+   * Hitung status "Aktif" / "Mendekati" / sisa menit ke jam mulai untuk satu shift,
+   * relatif ke jam saat ini (dalam menit sejak 00:00).
+   *
+   * PENTING: shift yang nyebrang tengah malam (mis. Malam 23:00 -> 07:00) punya
+   * jam_keluar (menit) lebih kecil dari jam_masuk. Kalau dianggap seperti shift
+   * biasa (start <= now <= end), kondisi itu SECARA MATEMATIS TIDAK PERNAH BENAR
+   * (23:00 <= now <= 07:00 mustahil), jadi shift Malam nggak akan pernah kedeteksi
+   * "Aktif" walau jam sekarang beneran 01:00 dini hari. Makanya perlu logika
+   * wrap-around khusus untuk shift yang overnight.
+   */
+  function computeShiftMeta(shift, currentMinutes) {
+    const start = parseTimeToMinutes(shift.jam_masuk);
+    const end   = parseTimeToMinutes(shift.jam_keluar);
+    if (start === null || end === null) {
+      return { _isActive: false, _isNear: false, _minutesUntilStart: Infinity };
+    }
+
+    const overnight = end <= start; // shift melewati tengah malam
+    const isActive = overnight
+      ? (currentMinutes >= start || currentMinutes <= end)
+      : (currentMinutes >= start && currentMinutes <= end);
+
+    // Sisa menit sampai shift ini mulai (0 kalau sedang aktif), dihitung memutar
+    // lewat tengah malam supaya shift dini hari besok tetap terhitung benar.
+    const minutesUntilStart = isActive ? 0 : ((start - currentMinutes + 1440) % 1440);
+    const isNear = !isActive && minutesUntilStart <= 90; // dalam 90 menit sebelum mulai
+
+    return { _isActive: isActive, _isNear: isNear, _minutesUntilStart: minutesUntilStart };
+  }
+
+  /**
+   * Kembalikan SEMUA shift yang di-assign ke karyawan (bukan cuma yang "dekat"
+   * jam sekarang), sudah dilengkapi status Aktif/Mendekati dan diurutkan dari
+   * yang paling relevan (Aktif dulu, lalu yang paling cepat mulai).
+   *
+   * Sebelumnya fungsi ini MENYARING shift jadi hanya yang aktif atau <=60 menit
+   * lagi mulai — kalau cuma tersisa 1 shift yang lolos filter, sistem langsung
+   * pakai shift itu TANPA nanya ke karyawan. Ini berbahaya untuk karyawan yang
+   * di-assign banyak shift (misal satpam Pagi+Sore+Malam): kalau dia datang
+   * lebih awal (misal 1,5 jam sebelum shift Malam), shift Malam belum masuk
+   * window "Mendekati", tapi jam segitu kebetulan masih dalam rentang shift Sore
+   * -> sistem salah otomatis mencatatnya sebagai absen masuk Shift Sore yang
+   * telat parah. Sekarang: kalau karyawan punya >1 shift, dia SELALU diminta
+   * memilih sendiri shift mana yang mau dipakai.
+   */
   function getShiftCandidates() {
     const shifts = Array.isArray(cfg.userShifts) ? cfg.userShifts : [];
     if (!shifts.length) return [];
 
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    return shifts.filter((shift) => {
-      const start = parseTimeToMinutes(shift.jam_masuk);
-      const end = parseTimeToMinutes(shift.jam_keluar);
-      if (start === null || end === null) return false;
-      const isActive = currentMinutes >= start && currentMinutes <= end;
-      const isNear = currentMinutes < start && (start - currentMinutes) <= 60;
-      shift._isActive = isActive;
-      shift._isNear = isNear;
-      return isActive || isNear;
+
+    const annotated = shifts.map((shift) => Object.assign({}, shift, computeShiftMeta(shift, currentMinutes)));
+    annotated.sort((a, b) => {
+      if (a._isActive !== b._isActive) return a._isActive ? -1 : 1;
+      return a._minutesUntilStart - b._minutesUntilStart;
     });
+    return annotated;
   }
 
   function formatShiftLabel(shift) {
@@ -232,7 +275,7 @@
     let selectedShift = null;
     if (type === 'masuk') {
       const candidates = getShiftCandidates();
-      const shouldPrompt = Array.isArray(cfg.userShifts) && cfg.userShifts.length > 1 && candidates.length > 1;
+      const shouldPrompt = Array.isArray(cfg.userShifts) && cfg.userShifts.length > 1;
       if (shouldPrompt) {
         const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
         const optionsHtml = candidates.map((shift, idx) => {
@@ -258,7 +301,7 @@
                 <div class="swal2-shift-icon"><i class="bi bi-clock-history"></i></div>
                 <div>
                   <div class="swal2-shift-title">Pilih shift yang akan dipakai</div>
-                  <div class="swal2-shift-subtitle">Shift yang muncul adalah shift yang sedang aktif atau akan dimulai dalam 1 jam ke depan.</div>
+                  <div class="swal2-shift-subtitle">Pilih shift yang benar sesuai jadwal Anda. Status Aktif/Mendekati hanya panduan, bukan penentu otomatis.</div>
                 </div>
               </div>
               <div class="swal2-shift-list">${optionsHtml}</div>
