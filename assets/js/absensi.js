@@ -219,6 +219,11 @@
     if (btn.disabled) return;
 
     const foto = captureBase64();
+    // Bekukan hasil deteksi wajah tepat di momen foto diambil,
+    // supaya tidak tertimpa oleh detectLoop yang terus berjalan
+    // selama popup keterlambatan terbuka (mencegah false "wajah tidak cocok").
+    const capturedDescriptor = lastDescriptor;
+    const capturedDistance = lastDistance;
     const now = new Date();
     const currentDate = now.toLocaleDateString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric' });
     const currentTime = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
@@ -364,8 +369,8 @@
     fd.append('lat', gps.lat);
     if (selectedShift && selectedShift.id) fd.append('shift_id', selectedShift.id);
     fd.append('lng', gps.lng);
-    if (lastDistance !== null) fd.append('face_distance', lastDistance);
-    if (lastDescriptor)        fd.append('descriptor', JSON.stringify(lastDescriptor));
+    if (capturedDistance !== null) fd.append('face_distance', capturedDistance);
+    if (capturedDescriptor)        fd.append('descriptor', JSON.stringify(capturedDescriptor));
     if (reason)                 fd.append('keterangan', reason);
 
     try {
