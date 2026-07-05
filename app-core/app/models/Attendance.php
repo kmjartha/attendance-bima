@@ -10,6 +10,24 @@ class Attendance extends Model
 
     public function todayFor(int $userId): ?array
     {
+        // Cek dulu apakah ada sesi absen yang masih terbuka (sudah absen masuk,
+        // belum absen pulang). Ini wajib untuk shift yang melewati tengah malam
+        // (mis. Shift Satpam Malam 23:00-07:00): baris absennya tersimpan dengan
+        // `tanggal` = tanggal saat absen MASUK (hari sebelumnya), sehingga jika kita
+        // hanya mencari berdasarkan tanggal HARI INI, baris tsb tidak ketemu dan
+        // karyawan dikira belum absen masuk saat mau absen pulang.
+        $stmt = $this->db()->prepare(
+            "SELECT * FROM attendances
+             WHERE user_id = ? AND jam_masuk IS NOT NULL AND jam_keluar IS NULL
+               AND jam_masuk >= (NOW() - INTERVAL 20 HOUR)
+             ORDER BY jam_masuk DESC LIMIT 1"
+        );
+        $stmt->execute([$userId]);
+        $open = $stmt->fetch();
+        if ($open) return $open;
+
+        // Tidak ada sesi terbuka -> cek baris untuk tanggal hari ini (untuk kasus
+        // absen masuk baru, atau yang sudah selesai masuk+pulang hari ini).
         $today = date('Y-m-d');
         $stmt = $this->db()->prepare("SELECT * FROM attendances WHERE user_id = ? AND tanggal = ? LIMIT 1");
         $stmt->execute([$userId, $today]);

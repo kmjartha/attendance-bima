@@ -142,10 +142,29 @@ class AbsensiController extends Controller
             if ($today && $today['jam_masuk']) {
                 return $this->json(['success'=>false,'message'=>'Anda sudah absen masuk hari ini']);
             }
+
+            // Tentukan tanggal shift yang sebenarnya. Untuk shift yang melewati
+            // tengah malam (mis. Malam 23:00 -> 07:00), jika karyawan absen masuk
+            // di dini hari (misal telat, jam 00:30) SETELAH tengah malam tapi
+            // MASIH SEBELUM jam keluar shift tsb, maka itu tetap bagian dari shift
+            // yang dimulai KEMARIN — bukan shift baru hari ini. Tanpa ini, status
+            // telat salah dihitung (dibandingkan ke jam masuk "hari ini" yang
+            // belum terjadi) dan baris absennya bisa bentrok dengan shift lain
+            // yang kebetulan terjadwal di hari yang sama.
+            $tanggalAbsen = date('Y-m-d');
+            if ($shift) {
+                $shiftMasukTime  = strtotime($shift['jam_masuk']);
+                $shiftKeluarTime = strtotime($shift['jam_keluar']);
+                $isOvernight     = $shiftKeluarTime <= $shiftMasukTime;
+                if ($isOvernight && strtotime(date('H:i:s')) < $shiftKeluarTime) {
+                    $tanggalAbsen = date('Y-m-d', strtotime('-1 day'));
+                }
+            }
+
             // Status: hadir / telat
             $status = 'hadir';
             if ($shift) {
-                $jamMasukShift = strtotime(date('Y-m-d') . ' ' . $shift['jam_masuk']);
+                $jamMasukShift = strtotime($tanggalAbsen . ' ' . $shift['jam_masuk']);
                 $batas = $jamMasukShift + ((int)$shift['toleransi_menit']) * 60;
                 if (time() > $batas) $status = 'telat';
             }
@@ -156,7 +175,7 @@ class AbsensiController extends Controller
             $data = [
                 'user_id'          => $me['id'],
                 'shift_id'         => $shiftId,
-                'tanggal'          => date('Y-m-d'),
+                'tanggal'          => $tanggalAbsen,
                 'jam_masuk'        => $now,
                 'foto_masuk'       => $rel,
                 'lat_masuk'        => $lat,
