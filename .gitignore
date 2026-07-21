@@ -1,0 +1,31 @@
+# Environment
+/app-core/.env
+
+# Dependencies (jika nanti pakai composer/npm)
+/app-core/vendor
+/app-core/node_modules
+
+# Storage & cache
+/app-core/storage/logs/*
+/app-core/storage/cache/*
+!/app-core/storage/logs/.gitkeep
+!/app-core/storage/cache/.gitkeep
+
+# Uploads milik user (jangan ikut commit, isinya data, bukan kode)
+/uploads/*
+!/uploads/.gitkeep
+!/uploads/announcements/.gitkeep
+!/uploads/attendance/.gitkeep
+!/uploads/documents/.gitkeep
+!/uploads/profile/.gitkeep
+
+# Database dump / backup (jangan ikut commit, bisa berisi data production)
+/app-core/database/*.sql
+/app-core/database/backups/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

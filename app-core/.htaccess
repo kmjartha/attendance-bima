@@ -1,0 +1,19 @@
+# =========================================================================
+# PENTING: Folder ini berisi source code aplikasi (app, config, database,
+# routes, storage, .env) yang TIDAK BOLEH bisa diakses langsung lewat
+# browser/URL. Karena Hostinger shared hosting tidak mengizinkan custom
+# document root, folder ini tetap fisik di dalam public_html, sehingga
+# proteksi di bawah ini WAJIB aktif.
+# =========================================================================
+
+Options -Indexes -FollowSymLinks
+
+<IfModule mod_authz_core.c>
+    # Apache 2.4+
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    # Apache 2.2 (fallback)
+    Order deny,allow
+    Deny from all
+</IfModule>

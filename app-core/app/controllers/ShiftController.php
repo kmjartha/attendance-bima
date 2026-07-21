@@ -1,0 +1,130 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Core\Controller;
+use App\Core\Validator;
+use App\Models\Shift;
+use App\Models\User;
+use App\Models\UserShift;
+
+class ShiftController extends Controller
+{
+    /** Whitelist nama hari yang sah utk kolom hari_aktif — cegah nilai sembarangan lolos lewat request mentah. */
+    private const VALID_DAYS = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+
+    private function hariAktifFromPost(): string
+    {
+        $days = array_intersect((array)($_POST['hari_aktif'] ?? []), self::VALID_DAYS);
+        return !empty($days) ? implode(',', $days) : 'Senin,Selasa,Rabu,Kamis,Jumat';
+    }
+
+    private function guard(): void
+    {
+        if (!has_role('HRD')) {
+            http_response_code(403);
+            echo $this->view->render('errors/403', ['title' => '403'], 'auth');
+            exit;
+        }
+    }
+
+    private function guardView(): void
+    {
+        if (!has_role('HRD', 'Supervisor')) {
+            http_response_code(403);
+            echo $this->view->render('errors/403', ['title' => '403'], 'auth');
+            exit;
+        }
+    }
+
+    public function index(): string
+    {
+        $this->guardView();
+        return $this->render('shift.index', [
+            'title'  => 'Master Shift Kerja',
+            'shifts' => (new Shift())->all('jam_masuk ASC'),
+            'users'  => (new User())->allWithRole(),
+            'assignedUserIds' => (new UserShift())->assignedUserIdsByShift(),
+        ]);
+    }
+
+    public function assign(string $id): string
+    {
+        $this->guard();
+        $shiftId = (int)$id;
+        if (!(new Shift())->find($shiftId)) {
+            return $this->redirect('/shift');
+        }
+
+        $userIds = array_values(array_unique(array_map('intval', (array)($_POST['user_ids'] ?? []))));
+        if (empty($userIds)) {
+            // Jika tidak ada user yang dipilih, hapus semua assignment shift ini.
+            (new UserShift())->setUsersForShift($shiftId, []);
+            $this->flash('success', 'Semua karyawan berhasil dihapus dari shift ini.');
+            return $this->redirect('/shift');
+        }
+
+        (new UserShift())->setUsersForShift($shiftId, $userIds);
+        $this->flash('success', 'Shift berhasil diassign ke karyawan terpilih.');
+        return $this->redirect('/shift');
+    }
+
+    public function store(): string
+    {
+        $this->guard();
+        $rules = [
+            'nama'            => 'required|max:64',
+            'jam_masuk'       => 'required',
+            'jam_keluar'      => 'required',
+            'toleransi_menit' => 'required|integer',
+            'cut_off_tanggal' => 'required|integer',
+        ];
+        $v = Validator::make($_POST, $rules);
+        if ($v->fails()) {
+            $this->flash('error', 'Lengkapi data shift.');
+            return $this->redirect('/shift');
+        }
+        (new Shift())->create([
+            'nama'            => trim($_POST['nama']),
+            'jam_masuk'       => $_POST['jam_masuk'],
+            'jam_keluar'      => $_POST['jam_keluar'],
+            'toleransi_menit' => (int)$_POST['toleransi_menit'],
+            'cut_off_tanggal' => (int)$_POST['cut_off_tanggal'],
+            'is_active'       => isset($_POST['is_active']) ? 1 : 0,
+            'hari_aktif'      => $this->hariAktifFromPost(),
+        ]);
+        $this->flash('success', 'Shift baru ditambahkan.');
+        return $this->redirect('/shift');
+    }
+
+    public function update(string $id): string
+    {
+        $this->guard();
+        $m = new Shift();
+        if (!$m->find((int)$id)) return $this->redirect('/shift');
+        $m->update((int)$id, [
+            'nama'            => trim($_POST['nama']),
+            'jam_masuk'       => $_POST['jam_masuk'],
+            'jam_keluar'      => $_POST['jam_keluar'],
+            'toleransi_menit' => (int)$_POST['toleransi_menit'],
+            'cut_off_tanggal' => (int)$_POST['cut_off_tanggal'],
+            'is_active'       => isset($_POST['is_active']) ? 1 : 0,
+            'hari_aktif'      => $this->hariAktifFromPost(),
+        ]);
+        $this->flash('success', 'Shift diperbarui.');
+        return $this->redirect('/shift');
+    }
+
+    public function destroy(string $id): string
+    {
+        $this->guard();
+        $m = new Shift();
+        if ($m->inUse((int)$id)) {
+            $this->flash('error', 'Shift sedang dipakai karyawan, tidak bisa dihapus.');
+            return $this->redirect('/shift');
+        }
+        $m->delete((int)$id);
+        $this->flash('success', 'Shift dihapus.');
+        return $this->redirect('/shift');
+    }
+}

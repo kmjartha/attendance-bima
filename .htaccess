@@ -1,0 +1,28 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Blokir akses ke app-core/ SEBELUM rule lain dievaluasi (lapis kedua,
+    # selain .htaccess Deny di dalam app-core/ itu sendiri)
+    RewriteRule ^app-core/ - [F,L]
+
+    # Allow direct access to existing files
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Route all requests to index.php
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Security
+Options -Indexes
+
+<IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000, immutable" "expr=%{REQUEST_URI} =~ m#^/.*assets/models/.*\.(bin|json)$#"
+    Header set Cache-Control "public, max-age=31536000, immutable" "expr=%{REQUEST_URI} =~ m#^/.*assets/vendor/face-api/face-api\.min\.js$#"
+    Header set Cache-Control "public, max-age=86400" "expr=%{REQUEST_URI} =~ m#^/.*sw-face-models\.js$#"
+</IfModule>
+
+<FilesMatch "\.(env|ini|log|sql)$">
+    Require all denied
+</FilesMatch>
