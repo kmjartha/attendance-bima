@@ -33,7 +33,11 @@
             <?php endforeach; ?>
           </select>
         </div>
+<<<<<<< HEAD
         <div class="col-md-6">
+=======
+        <div class="col-md-3">
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
           <label class="form-label">Shift</label>
           <div style="max-height: 140px; overflow-y: auto; border: 1px solid #eceff3; border-radius: 8px; padding: 8px; background: #f9fafb;">
             <?php foreach ($shifts as $s): ?>
@@ -45,10 +49,14 @@
               </div>
             <?php endforeach; ?>
           </div>
+<<<<<<< HEAD
           <small class="text-muted">
             Pilih satu atau lebih shift. Pilihan pertama jadi default. Hari efektif kerja (kapan dianggap wajib absen)
             sekarang diatur per-shift di menu <a href="<?= url('/shift') ?>" target="_blank">Shift Kerja</a>, bukan di sini.
           </small>
+=======
+          <small class="text-muted">Pilih satu atau lebih shift. Pilihan pertama jadi default.</small>
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
         </div>
         <div class="col-md-6">
           <label class="form-label">Email</label>

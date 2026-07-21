@@ -21,6 +21,7 @@
     <input type="number" name="cut_off_tanggal" class="form-control" min="1" max="28" value="25" required>
   </div>
   <div class="col-12">
+<<<<<<< HEAD
     <label class="form-label">Hari Efektif Kerja</label>
     <select class="form-select form-select-sm mb-2" name="hari_aktif_preset" id="hariAktifPreset-<?= $isEdit?'e':'c' ?>" onchange="hariAktifPresetChange(this, '<?= $isEdit?'e':'c' ?>')">
       <option value="Senin,Selasa,Rabu,Kamis,Jumat">Senin – Jumat</option>
@@ -38,12 +39,15 @@
     </div>
   </div>
   <div class="col-12">
+=======
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
     <div class="form-check form-switch">
       <input type="checkbox" name="is_active" id="active-<?= $isEdit?'e':'c' ?>" class="form-check-input" checked>
       <label for="active-<?= $isEdit?'e':'c' ?>" class="form-check-label">Shift aktif</label>
     </div>
   </div>
 </div>
+<<<<<<< HEAD
 <script>
 if (typeof hariAktifPresetChange !== 'function') {
   function hariAktifPresetChange(sel, ctx) {
@@ -72,3 +76,5 @@ if (typeof hariAktifPresetChange !== 'function') {
   });
 }
 </script>
+=======
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8

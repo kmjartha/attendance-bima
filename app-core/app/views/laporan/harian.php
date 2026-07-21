@@ -13,6 +13,7 @@ $date = $date ?? date('Y-m-d');
   </form>
 </div>
 
+<<<<<<< HEAD
 <div class="alert d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3" style="background:#eef2ff;border:1px solid #dbe3fb;border-radius:.75rem;">
   <div class="small">
     <i class="bi bi-info-circle"></i> Status <strong>Alpha</strong> normalnya tertulis otomatis tiap dini hari (proses terjadwal).
@@ -26,6 +27,8 @@ $date = $date ?? date('Y-m-d');
   </form>
 </div>
 
+=======
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
 <div class="card-soft p-0" style="overflow-x:auto">
   <table class="table table-hover align-middle mb-0">
     <thead style="background:var(--surface-2)">

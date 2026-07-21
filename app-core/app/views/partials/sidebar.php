@@ -83,6 +83,7 @@
         <i class="bi bi-person-lines-fill"></i> Laporan Karyawan
       </a>
     <?php endif; ?>
+<<<<<<< HEAD
 
     <?php if (has_role('HRD')): ?>
       <div class="group-label">Pengaturan</div>
@@ -90,6 +91,8 @@
         <i class="bi bi-calendar-x-fill"></i> Hari Libur
       </a>
     <?php endif; ?>
+=======
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
   </nav>
 
   <div class="sidebar-footer">

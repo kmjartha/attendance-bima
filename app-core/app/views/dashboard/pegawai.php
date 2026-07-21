@@ -18,6 +18,7 @@
   </div>
 </div>
 
+<<<<<<< HEAD
 <?php if (!empty($is_off_day) && !$today): ?>
 <div class="card-soft mb-3" style="padding:1.1rem;text-align:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
   <div style="font-size:2rem;line-height:1">🌴</div>
@@ -31,6 +32,8 @@
   </div>
 </div>
 <?php else: ?>
+=======
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
 <div class="card-soft mb-3" style="padding:1rem 1.1rem">
   <div class="d-flex align-items-center justify-content-between mb-2">
     <div style="font-weight:600;font-size:.92rem">Status Hari Ini</div>
@@ -53,6 +56,7 @@
     </div>
   <?php endif; ?>
 </div>
+<<<<<<< HEAD
 <?php endif; ?>
 
 <div class="mobile-section-title">Aksi Cepat</div>
@@ -70,6 +74,16 @@
       <div class="sub">Selfie + GPS</div>
     </a>
   <?php endif; ?>
+=======
+
+<div class="mobile-section-title">Aksi Cepat</div>
+<div class="mobile-action-grid">
+  <a href="<?= url('/absensi') ?>" class="mobile-action-btn primary">
+    <div class="ico"><i class="bi bi-camera-fill"></i></div>
+    <div class="label"><?= $today && $today['jam_masuk'] && !$today['jam_keluar'] ? 'Absen Pulang' : 'Absen Masuk' ?></div>
+    <div class="sub">Selfie + GPS</div>
+  </a>
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
   <a href="<?= url('/absensi/riwayat') ?>" class="mobile-action-btn">
     <div class="ico"><i class="bi bi-clock-history"></i></div>
     <div class="label">Riwayat</div>

@@ -10,6 +10,7 @@ use App\Models\UserShift;
 
 class ShiftController extends Controller
 {
+<<<<<<< HEAD
     /** Whitelist nama hari yang sah utk kolom hari_aktif — cegah nilai sembarangan lolos lewat request mentah. */
     private const VALID_DAYS = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
 
@@ -19,6 +20,8 @@ class ShiftController extends Controller
         return !empty($days) ? implode(',', $days) : 'Senin,Selasa,Rabu,Kamis,Jumat';
     }
 
+=======
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
     private function guard(): void
     {
         if (!has_role('HRD')) {
@@ -91,7 +94,10 @@ class ShiftController extends Controller
             'toleransi_menit' => (int)$_POST['toleransi_menit'],
             'cut_off_tanggal' => (int)$_POST['cut_off_tanggal'],
             'is_active'       => isset($_POST['is_active']) ? 1 : 0,
+<<<<<<< HEAD
             'hari_aktif'      => $this->hariAktifFromPost(),
+=======
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
         ]);
         $this->flash('success', 'Shift baru ditambahkan.');
         return $this->redirect('/shift');
@@ -109,7 +115,10 @@ class ShiftController extends Controller
             'toleransi_menit' => (int)$_POST['toleransi_menit'],
             'cut_off_tanggal' => (int)$_POST['cut_off_tanggal'],
             'is_active'       => isset($_POST['is_active']) ? 1 : 0,
+<<<<<<< HEAD
             'hari_aktif'      => $this->hariAktifFromPost(),
+=======
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
         ]);
         $this->flash('success', 'Shift diperbarui.');
         return $this->redirect('/shift');

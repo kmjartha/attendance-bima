@@ -85,7 +85,11 @@ spl_autoload_register(function ($class) {
 |--------------------------------------------------------------------------
 */
 
+<<<<<<< HEAD
 foreach (['auth', 'url', 'format', 'upload', 'face', 'policy'] as $helper) {
+=======
+foreach (['auth', 'url', 'format', 'upload', 'face'] as $helper) {
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
     require APP_PATH . '/helpers/' . $helper . '.php';
 }
 

@@ -8,6 +8,7 @@ class Attendance extends Model
 {
     protected string $table = 'attendances';
 
+<<<<<<< HEAD
     /**
      * Sinkronkan satu pengajuan cuti/sakit yang SUDAH disetujui ke tabel
      * attendances, supaya kolom "Izin"/"Sakit" di laporan benar-benar
@@ -156,6 +157,8 @@ class Attendance extends Model
         return $stats;
     }
 
+=======
+>>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
     public function todayFor(int $userId): ?array
     {
         // Cek dulu apakah ada sesi absen yang masih terbuka (sudah absen masuk,
