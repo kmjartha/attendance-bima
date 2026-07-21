@@ -175,7 +175,6 @@ class LaporanController extends Controller
         ]);
     }
 
-<<<<<<< HEAD
     /** POST /laporan/harian/cek-alpha — trigger manual, tidak perlu nunggu cron tengah malam */
     public function runAlphaCheck(): string
     {
@@ -197,8 +196,6 @@ class LaporanController extends Controller
         return $this->redirect('/laporan/harian?date=' . urlencode($date));
     }
 
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
     public function saveAttendance(int $userId): string
     {
         if (!has_role('HRD','Kepsek')) {

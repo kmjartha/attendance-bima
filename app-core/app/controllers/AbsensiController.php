@@ -9,11 +9,8 @@ use App\Models\User;
 use App\Models\UserShift;
 use App\Models\Shift;
 use App\Models\Announcement;
-<<<<<<< HEAD
 use App\Models\RolePolicy;
 use App\Models\Holiday;
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
 
 class AbsensiController extends Controller
 {
@@ -46,7 +43,6 @@ class AbsensiController extends Controller
 
         $layout = is_pegawai() ? 'mobile' : 'app';
 
-<<<<<<< HEAD
         // Kalau hari ini bukan hari kerja efektif (hari_aktif shift, atau
         // fallback weekend role) / hari libur, dan belum absen masuk -> jangan
         // tampilkan form kamera, tampilkan layar "Selamat Liburan" saja.
@@ -75,8 +71,6 @@ class AbsensiController extends Controller
             }
         }
 
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
         return $this->render('absensi.form', [
             'title'       => $mode === 'keluar' ? 'Absen Pulang' : 'Absen Masuk',
             'me'          => $full,
@@ -179,7 +173,6 @@ class AbsensiController extends Controller
                 return $this->json(['success'=>false,'message'=>'Anda sudah absen masuk hari ini']);
             }
 
-<<<<<<< HEAD
             // Tentukan tanggal shift yang sebenarnya SEBELUM cek hari libur/hari
             // efektif di bawah ini. Untuk shift yang melewati tengah malam (mis.
             // Malam 23:00 -> 07:00), kalau karyawan absen masuk di dini hari
@@ -189,16 +182,6 @@ class AbsensiController extends Controller
             // bawah ini pakai tanggal kalender hari ini (bukan tanggal shift
             // yang benar), bisa salah menolak/menerima absen tepat di seputar
             // tengah malam.
-=======
-            // Tentukan tanggal shift yang sebenarnya. Untuk shift yang melewati
-            // tengah malam (mis. Malam 23:00 -> 07:00), jika karyawan absen masuk
-            // di dini hari (misal telat, jam 00:30) SETELAH tengah malam tapi
-            // MASIH SEBELUM jam keluar shift tsb, maka itu tetap bagian dari shift
-            // yang dimulai KEMARIN — bukan shift baru hari ini. Tanpa ini, status
-            // telat salah dihitung (dibandingkan ke jam masuk "hari ini" yang
-            // belum terjadi) dan baris absennya bisa bentrok dengan shift lain
-            // yang kebetulan terjadwal di hari yang sama.
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
             $tanggalAbsen = date('Y-m-d');
             if ($shift) {
                 $shiftMasukTime  = strtotime($shift['jam_masuk']);
@@ -209,7 +192,6 @@ class AbsensiController extends Controller
                 }
             }
 
-<<<<<<< HEAD
             // Hari libur / bukan hari kerja efektif -> tidak boleh absen masuk sama sekali.
             $rolePolicyOffDay = (new RolePolicy())->forRole((int)$me['role_id']);
             $holidayToday = (new Holiday())->findBy('tanggal', $tanggalAbsen);
@@ -231,8 +213,6 @@ class AbsensiController extends Controller
                 ]);
             }
 
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
             // Status: hadir / telat
             $status = 'hadir';
             if ($shift) {

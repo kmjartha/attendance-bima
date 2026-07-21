@@ -5,10 +5,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Models\LeaveRequest;
 use App\Models\User;
-<<<<<<< HEAD
 use App\Models\Attendance;
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
 
 class VerifikasiController extends Controller
 {
@@ -83,15 +80,12 @@ class VerifikasiController extends Controller
             'catatan'     => $catatan ?: null,
         ]);
 
-<<<<<<< HEAD
         // Tulis baris izin/sakit ke tabel attendances supaya kolom "Izin"/
         // "Sakit" di laporan benar-benar terisi (lihat Attendance::syncFromApprovedLeave).
         if ($newStatus === 'approved') {
             (new Attendance())->syncFromApprovedLeave($req);
         }
 
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
         $this->flash('success', 'Pengajuan ' . ($aksi==='approve'?'disetujui':'ditolak') . '.');
         return $this->redirect('/verifikasi-cuti');
     }

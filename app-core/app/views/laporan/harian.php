@@ -13,22 +13,6 @@ $date = $date ?? date('Y-m-d');
   </form>
 </div>
 
-<<<<<<< HEAD
-<div class="alert d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3" style="background:#eef2ff;border:1px solid #dbe3fb;border-radius:.75rem;">
-  <div class="small">
-    <i class="bi bi-info-circle"></i> Status <strong>Alpha</strong> normalnya tertulis otomatis tiap dini hari (proses terjadwal).
-    Kalau proses itu belum sempat terpasang di hosting, atau kamu mau cek sekarang juga tanpa nunggu besok, pakai tombol ini.
-    Aman diklik berkali-kali — karyawan yang belum lewat jam batasnya, atau yang sedang cuti/sakit disetujui, tidak akan ikut ditandai.
-  </div>
-  <form method="post" action="<?= url('/laporan/harian/cek-alpha') ?>" onsubmit="return confirm('Jalankan cek alpha untuk tanggal ' + this.date.value + ' sekarang?');">
-    <?= csrf_field() ?>
-    <input type="hidden" name="date" value="<?= e($date) ?>">
-    <button type="submit" class="btn btn-dark btn-sm text-nowrap"><i class="bi bi-lightning-charge-fill"></i> Jalankan Cek Alpha Sekarang</button>
-  </form>
-</div>
-
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
 <div class="card-soft p-0" style="overflow-x:auto">
   <table class="table table-hover align-middle mb-0">
     <thead style="background:var(--surface-2)">

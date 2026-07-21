@@ -11,12 +11,9 @@ class UserShift extends Model
     /**
      * Replace all shifts assigned to a user with the given list.
      * The first id in the array is marked as default.
-<<<<<<< HEAD
      * Catatan: hari_aktif TIDAK lagi diatur di sini — sekarang jadi
      * atribut milik shift itu sendiri (kolom shifts.hari_aktif, diatur
      * HRD lewat halaman Shift Kerja), bukan per-assignment lagi.
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
      */
     public function setShifts(int $userId, array $shiftIds): void
     {
@@ -132,7 +129,6 @@ class UserShift extends Model
         return $r ? (int)$r : null;
     }
 
-<<<<<<< HEAD
     /**
      * Assignment shift default seorang user, digabung dengan detail jam &
      * hari_aktif dari shift-nya. Dipakai untuk menentukan jam batas alpha
@@ -155,8 +151,6 @@ class UserShift extends Model
         return $row ?: null;
     }
 
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
     /** Return all shift ids assigned to user (default first). */
     public function shiftIdsFor(int $userId): array
     {

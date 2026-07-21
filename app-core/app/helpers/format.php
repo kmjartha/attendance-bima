@@ -83,7 +83,6 @@ if (!function_exists('status_badge')) {
             'approved' => ['bg-success-subtle text-success', 'Disetujui'],
             'rejected' => ['bg-danger-subtle text-danger', 'Ditolak'],
         ];
-<<<<<<< HEAD
         [$cls, $label] = $map[strtolower($status)] ?? ['bg-secondary-subtle text-secondary', e(ucfirst($status))];
         return '<span class="badge rounded-pill ' . $cls . '">' . $label . '</span>';
     }
@@ -98,9 +97,6 @@ if (!function_exists('holiday_type_badge')) {
             'sekolah'      => ['bg-secondary-subtle text-secondary', 'Sekolah'],
         ];
         [$cls, $label] = $map[$tipe] ?? ['bg-secondary-subtle text-secondary', e(ucfirst($tipe))];
-=======
-        [$cls, $label] = $map[strtolower($status)] ?? ['bg-secondary-subtle text-secondary', ucfirst($status)];
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
         return '<span class="badge rounded-pill ' . $cls . '">' . $label . '</span>';
     }
 }

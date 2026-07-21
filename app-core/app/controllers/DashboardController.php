@@ -8,12 +8,9 @@ use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\NotificationRead;
 use App\Models\User;
-<<<<<<< HEAD
 use App\Models\RolePolicy;
 use App\Models\UserShift;
 use App\Models\Holiday;
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
 
 class DashboardController extends Controller
 {
@@ -79,7 +76,6 @@ class DashboardController extends Controller
         $u          = user();
         $me         = (new User())->find((int)$u['id']);
         $today      = $attendance->todayFor((int)$u['id']);
-<<<<<<< HEAD
 
         $policy     = (new RolePolicy())->forRole((int)$me['role_id']);
         $assignment = (new UserShift())->defaultAssignment((int)$u['id']);
@@ -94,8 +90,6 @@ class DashboardController extends Controller
         $holiday    = (new Holiday())->findBy('tanggal', $todayDate);
         $isOffDay   = is_exempt_from_alpha($policy, $assignment, $todayDate, $holiday);
 
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
         return $this->render('dashboard.pegawai', [
             'title'         => 'Beranda',
             'today'         => $today,
@@ -103,11 +97,8 @@ class DashboardController extends Controller
             'me'            => $me,
             'streak'        => $attendance->streakFor((int)$u['id']),
             'jam_minggu'    => $attendance->workHoursThisWeek((int)$u['id']),
-<<<<<<< HEAD
             'is_off_day'    => $isOffDay,
             'holiday'       => $holiday,
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
         ], 'mobile');
     }
 }

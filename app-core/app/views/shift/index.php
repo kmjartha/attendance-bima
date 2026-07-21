@@ -31,7 +31,6 @@
         <div><i class="bi bi-sunset text-primary"></i> Keluar <strong><?= substr($s['jam_keluar'],0,5) ?></strong></div>
         <div><i class="bi bi-stopwatch text-danger"></i> Toleransi <strong><?= (int)$s['toleransi_menit'] ?> mnt</strong></div>
       </div>
-<<<<<<< HEAD
       <div class="mb-2">
         <?php
           $hariList = !empty($s['hari_aktif']) ? array_map('trim', explode(',', $s['hari_aktif'])) : ['Senin','Selasa','Rabu','Kamis','Jumat'];
@@ -45,8 +44,6 @@
         ?>
         <span class="badge bg-primary-subtle text-primary"><i class="bi bi-calendar-week"></i> <?= e($hariLabel) ?></span>
       </div>
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
       <div class="mb-3 text-muted-soft small">
         <?= count($assignedUserIds[$s['id']] ?? []) ?> karyawan ditugaskan
       </div>
@@ -66,12 +63,8 @@
                   data-keluar="<?= substr($s['jam_keluar'],0,5) ?>"
                   data-tol="<?= (int)$s['toleransi_menit'] ?>"
                   data-cut="<?= (int)$s['cut_off_tanggal'] ?>"
-<<<<<<< HEAD
                   data-active="<?= (int)$s['is_active'] ?>"
                   data-hari="<?= e($hariKey) ?>">
-=======
-                  data-active="<?= (int)$s['is_active'] ?>">
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
             <i class="bi bi-pencil"></i> Edit
           </button>
           <form method="post" action="<?= url('/shift/' . $s['id'] . '/delete') ?>" class="form-confirm-delete">
@@ -164,10 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
       form.querySelector('[name=toleransi_menit]').value = btn.dataset.tol;
       form.querySelector('[name=cut_off_tanggal]').value = btn.dataset.cut;
       form.querySelector('[name=is_active]').checked = btn.dataset.active === '1';
-<<<<<<< HEAD
       setHariAktif('e', btn.dataset.hari ? btn.dataset.hari.split(',') : ['Senin','Selasa','Rabu','Kamis','Jumat']);
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
       modal.show();
     });
   });

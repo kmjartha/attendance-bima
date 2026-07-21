@@ -70,10 +70,7 @@ $router->get ("/laporan/general",               "LaporanController@general",    
 $router->get ("/laporan/karyawan",              "LaporanController@karyawan",       [AuthMiddleware::class]);
 $router->get ("/laporan/karyawan/{id}",         "LaporanController@karyawanDetail", [AuthMiddleware::class]);
 $router->get ("/laporan/harian",                "LaporanController@harian",        [AuthMiddleware::class]);
-<<<<<<< HEAD
 $router->post("/laporan/harian/cek-alpha",      "LaporanController@runAlphaCheck", [AuthMiddleware::class, CsrfMiddleware::class]);
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
 $router->get ("/laporan/karyawan/{id}/export",  "LaporanController@karyawanExport", [AuthMiddleware::class]);
 $router->post("/laporan/harian/user/{userId}/edit", "LaporanController@saveAttendance", [AuthMiddleware::class, CsrfMiddleware::class]);
 $router->post("/laporan/harian/{id}/delete",     "LaporanController@deleteAttendance", [AuthMiddleware::class, CsrfMiddleware::class]);
@@ -85,12 +82,7 @@ $router->get ("/notifikasi/{type}/{id}",        "NotifikasiController@show",    
 $router->post("/notifikasi/read-all",            "NotifikasiController@readAll", [AuthMiddleware::class, CsrfMiddleware::class]);
 $router->post("/notifikasi/read",                "NotifikasiController@read",    [AuthMiddleware::class, CsrfMiddleware::class]);
 
-<<<<<<< HEAD
 // ========= Pengaturan (HRD) =========
 $router->get ("/pengaturan/libur",                  "PengaturanController@libur",           [AuthMiddleware::class]);
 $router->post("/pengaturan/libur/create",           "PengaturanController@storeLibur",      [AuthMiddleware::class, CsrfMiddleware::class]);
 $router->post("/pengaturan/libur/{id}/delete",      "PengaturanController@destroyLibur",    [AuthMiddleware::class, CsrfMiddleware::class]);
-
-
-=======
->>>>>>> 82b2a91719c8124c5fc11ec7a11023c006a306d8
