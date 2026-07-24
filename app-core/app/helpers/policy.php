@@ -61,17 +61,19 @@ if (!function_exists('is_exempt_from_alpha')) {
      * True jika user DIKECUALIKAN dari status alpha pada tanggal $date.
      *
      * Urutan pengecekan:
-     *  1. Kalau user punya shift assignment (hari_aktif terisi): dikecualikan
+     *  1. Jika $date ada di tabel holidays -> otomatis exempt (libur nasional/
+     *     hari libur berlaku untuk semua tanpa terkecuali)
+     *  2. Kalau user punya shift assignment (hari_aktif terisi): dikecualikan
      *     kalau $date BUKAN salah satu hari_aktif shift tsb (mis. Guru dgn
      *     hari_aktif Senin-Jumat otomatis dikecualikan di Sabtu/Minggu).
-     *  2. Kalau user TIDAK punya shift sama sekali: fallback ke
+     *  3. Kalau user TIDAK punya shift sama sekali: fallback ke
      *     role_policies.exempt_weekend (utk HRD/Kepsek/Supervisor/dst).
-     *  3. Terlepas dari itu, kalau role_policies.exempt_holiday = 1 DAN
-     *     $date ada di tabel holidays: tetap dikecualikan (libur nasional/
-     *     Bali berlaku lintas jadwal mingguan).
      */
     function is_exempt_from_alpha(?array $policy, ?array $assignment, string $date, ?array $holiday): bool
     {
+        // Priority 1: Jika ada holiday record, selalu exempt
+        if ($holiday) return true;
+
         $scheduled = is_scheduled_workday($assignment, $date);
 
         if ($scheduled !== null) {
@@ -81,8 +83,6 @@ if (!function_exists('is_exempt_from_alpha')) {
             // Tidak ada shift assignment -> fallback ke flag role.
             return true;
         }
-
-        if ($policy && !empty($policy['exempt_holiday']) && $holiday) return true;
 
         return false;
     }
