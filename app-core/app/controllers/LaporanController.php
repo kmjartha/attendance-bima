@@ -136,6 +136,8 @@ class LaporanController extends Controller
             $byDay[$h['tanggal']] = $h;
         }
         
+        $today = date('Y-m-d');
+
         // Build full history with all dates in range
         $fullHistory = [];
         while ($cursor <= $endTs) {
@@ -144,6 +146,7 @@ class LaporanController extends Controller
             
             // Check if this day is a workday for this employee
             $isExempt = is_exempt_from_alpha($policy, $assignment, $dayKey, $holiday);
+            $isFuture = $dayKey > $today;
             
             $labels[] = date('d M', $cursor);
             
@@ -151,8 +154,8 @@ class LaporanController extends Controller
                 // Actual attendance record exists
                 $fullHistory[] = $byDay[$dayKey];
                 $st = $byDay[$dayKey]['status'];
-            } elseif ($isExempt) {
-                // Day is exempt (weekend/holiday) -> show as "-"
+            } elseif ($isFuture || $isExempt) {
+                // Future date or exempt day -> show as "-"
                 $fullHistory[] = [
                     'tanggal' => $dayKey,
                     'status' => '-',
@@ -462,6 +465,7 @@ class LaporanController extends Controller
         // Build full history with all dates in range
         $fullHistory = [];
         $cursor = strtotime($startDate);
+        $today = date('Y-m-d');
         $endTs  = strtotime($endDate);
         while ($cursor <= $endTs) {
             $dayKey = date('Y-m-d', $cursor);
@@ -469,12 +473,13 @@ class LaporanController extends Controller
             
             // Check if this day is a workday for this employee
             $isExempt = is_exempt_from_alpha($policy, $assignment, $dayKey, $holiday);
+            $isFuture = $dayKey > $today;
             
             if (isset($byDay[$dayKey])) {
                 // Actual attendance record exists
                 $fullHistory[] = $byDay[$dayKey];
-            } elseif ($isExempt) {
-                // Day is exempt (weekend/holiday) -> show as "-"
+            } elseif ($isFuture || $isExempt) {
+                // Future date or exempt day -> show as "-"
                 $fullHistory[] = [
                     'tanggal' => $dayKey,
                     'status' => '-',
