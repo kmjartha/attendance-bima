@@ -61,9 +61,8 @@ class AbsensiController extends Controller
                     $tanggalCek = date('Y-m-d', strtotime('-1 day'));
                 }
             }
-            $policy     = (new RolePolicy())->forRole((int)$full['role_id']);
-            $holiday    = (new Holiday())->findBy('tanggal', $tanggalCek);
-            if (is_exempt_from_alpha($policy, $userShiftModel->defaultAssignment((int)$u['id']), $tanggalCek, $holiday)) {
+            $holiday = (new Holiday())->findBy('tanggal', $tanggalCek);
+            if ($holiday) {
                 return $this->render('absensi.libur', [
                     'title'   => 'Hari Libur',
                     'holiday' => $holiday,
@@ -192,12 +191,11 @@ class AbsensiController extends Controller
                 }
             }
 
-            // Hari libur / bukan hari kerja efektif -> tidak boleh absen masuk sama sekali.
+            // Hanya hari libur yang diatur di aplikasi yang memblokir absen masuk.
             $rolePolicyOffDay = (new RolePolicy())->forRole((int)$me['role_id']);
             $holidayToday = (new Holiday())->findBy('tanggal', $tanggalAbsen);
-            $assignmentToday = (new \App\Models\UserShift())->defaultAssignment((int)$me['id']);
-            if (is_exempt_from_alpha($rolePolicyOffDay, $assignmentToday, $tanggalAbsen, $holidayToday)) {
-                return $this->json(['success'=>false,'message'=>'Hari ini bukan hari kerja Anda / hari libur. Selamat liburan!']);
+            if ($holidayToday) {
+                return $this->json(['success'=>false,'message'=>'Hari ini adalah hari libur yang telah ditetapkan di aplikasi. Selamat liburan!']);
             }
 
             // Tutup absen masuk di jam malam utk role yang kebijakannya
