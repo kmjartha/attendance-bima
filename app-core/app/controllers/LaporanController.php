@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Models\Attendance;
+use App\Models\Holiday;
+use App\Models\RolePolicy;
 use App\Models\Shift;
 use App\Models\User;
 use App\Models\UserShift;
@@ -117,6 +119,14 @@ class LaporanController extends Controller
         $summary = $att->summaryRange($id, $startDate, $endDate);
         $history = $att->historyRange($id, $startDate, $endDate);
 
+        // Get user's shift assignment and role policy for alpha exemption check
+        $userShiftModel = new UserShift();
+        $policyModel    = new RolePolicy();
+        $holidayModel   = new Holiday();
+        
+        $assignment = $userShiftModel->defaultAssignment($id);
+        $policy     = $policyModel->forRole((int)$karyawan['role_id']);
+
         // Build complete date range with attendance status
         $labels = $hadirSeries = $telatSeries = [];
         $cursor = strtotime($startDate);
@@ -130,12 +140,32 @@ class LaporanController extends Controller
         $fullHistory = [];
         while ($cursor <= $endTs) {
             $dayKey = date('Y-m-d', $cursor);
+            $holiday = $holidayModel->findBy('tanggal', $dayKey);
+            
+            // Check if this day is a workday for this employee
+            $isExempt = is_exempt_from_alpha($policy, $assignment, $dayKey, $holiday);
+            
             $labels[] = date('d M', $cursor);
             
             if (isset($byDay[$dayKey])) {
+                // Actual attendance record exists
                 $fullHistory[] = $byDay[$dayKey];
                 $st = $byDay[$dayKey]['status'];
+            } elseif ($isExempt) {
+                // Day is exempt (weekend/holiday) -> show as "-"
+                $fullHistory[] = [
+                    'tanggal' => $dayKey,
+                    'status' => '-',
+                    'jam_masuk' => null,
+                    'jam_keluar' => null,
+                    'shift_nama' => null,
+                    'terlambat_menit' => null,
+                    'keterangan' => null,
+                    'face_match_score' => null
+                ];
+                $st = '-';
             } else {
+                // No record but it's a workday -> mark as alpha
                 $fullHistory[] = [
                     'tanggal' => $dayKey,
                     'status' => 'alpha',
@@ -415,6 +445,14 @@ class LaporanController extends Controller
         $sum   = $att->summaryRange($id, $startDate, $endDate);
         $hist  = $att->historyRange($id, $startDate, $endDate);
 
+        // Get user's shift assignment and role policy for alpha exemption check
+        $userShiftModel = new UserShift();
+        $policyModel    = new RolePolicy();
+        $holidayModel   = new Holiday();
+        
+        $assignment = $userShiftModel->defaultAssignment($id);
+        $policy     = $policyModel->forRole((int)$karyawan['role_id']);
+
         // Build complete date range with attendance status
         $byDay = [];
         foreach ($hist as $h) {
@@ -427,9 +465,28 @@ class LaporanController extends Controller
         $endTs  = strtotime($endDate);
         while ($cursor <= $endTs) {
             $dayKey = date('Y-m-d', $cursor);
+            $holiday = $holidayModel->findBy('tanggal', $dayKey);
+            
+            // Check if this day is a workday for this employee
+            $isExempt = is_exempt_from_alpha($policy, $assignment, $dayKey, $holiday);
+            
             if (isset($byDay[$dayKey])) {
+                // Actual attendance record exists
                 $fullHistory[] = $byDay[$dayKey];
+            } elseif ($isExempt) {
+                // Day is exempt (weekend/holiday) -> show as "-"
+                $fullHistory[] = [
+                    'tanggal' => $dayKey,
+                    'status' => '-',
+                    'jam_masuk' => null,
+                    'jam_keluar' => null,
+                    'shift_nama' => null,
+                    'terlambat_menit' => null,
+                    'keterangan' => null,
+                    'face_match_score' => null
+                ];
             } else {
+                // No record but it's a workday -> mark as alpha
                 $fullHistory[] = [
                     'tanggal' => $dayKey,
                     'status' => 'alpha',
@@ -441,6 +498,7 @@ class LaporanController extends Controller
                     'face_match_score' => null
                 ];
             }
+            
             $cursor += 86400;
         }
 

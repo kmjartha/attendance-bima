@@ -92,16 +92,18 @@ if (!function_exists('current_time')) {
 if (!function_exists('status_badge')) {
     function status_badge(string $status): string
     {
+        if ($status === '-') return '—';
+        
         $map = [
             'hadir'        => ['bg-success-subtle text-success', 'Hadir'],
             'telat'        => ['bg-warning-subtle text-warning', 'Telat'],
-            'izin'         => ['bg-info-subtle text-info', 'Izin'],
-            'sakit'        => ['bg-danger-subtle text-danger', 'Sakit'],
-            'alpha'        => ['bg-secondary-subtle text-secondary', 'Alpha'],
+            'izin'         => ['bg-primary-subtle text-primary', 'Izin'],
+            'sakit'        => ['bg-info-subtle text-info', 'Sakit'],
+            'alpha'        => ['bg-danger-subtle text-danger', 'Alpha'],
             'belum_absen'  => ['bg-secondary-subtle text-secondary', 'Belum Absen'],
             'pending'      => ['bg-warning-subtle text-warning', 'Pending'],
-            'approved' => ['bg-success-subtle text-success', 'Disetujui'],
-            'rejected' => ['bg-danger-subtle text-danger', 'Ditolak'],
+            'approved'     => ['bg-success-subtle text-success', 'Disetujui'],
+            'rejected'     => ['bg-danger-subtle text-danger', 'Ditolak'],
         ];
         [$cls, $label] = $map[strtolower($status)] ?? ['bg-secondary-subtle text-secondary', e(ucfirst($status))];
         return '<span class="badge rounded-pill ' . $cls . '">' . $label . '</span>';
