@@ -78,7 +78,7 @@ $totalHari = array_sum(array_map('intval', $summary));
       <?php endif; ?>
       <?php foreach ($history as $h): ?>
         <tr>
-          <td><?= e(format_date_id($h['tanggal'])) ?></td>
+          <td><?= e(format_date_with_day_id($h['tanggal'])) ?></td>
           <td class="text-muted-soft"><?= e($h['shift_nama'] ?? '-') ?></td>
           <td><?= e(time_only($h['jam_masuk'])) ?></td>
           <td class="text-center"><?= isset($h['terlambat_menit']) && $h['terlambat_menit']!==null ? (int)$h['terlambat_menit'] : '—' ?></td>

@@ -33,6 +33,26 @@ if (!function_exists('format_date_id')) {
     }
 }
 
+if (!function_exists('format_date_with_day_id')) {
+    /**
+     * Format date with day name in one string
+     * @param string $date Date string (Y-m-d format)
+     * @return string Formatted like "Sabtu, 4 Juli 2026"
+     */
+    function format_date_with_day_id(?string $date): string
+    {
+        if (!$date) return '-';
+        $hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+        $bulan = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        $ts = strtotime($date);
+        $dayName = $hari[(int)date('w', $ts)];
+        $day = date('j', $ts);
+        $monthName = $bulan[(int)date('n', $ts)];
+        $year = date('Y', $ts);
+        return "{$dayName}, {$day} {$monthName} {$year}";
+    }
+}
+
 if (!function_exists('time_only')) {
     function time_only(?string $datetime): string
     {
@@ -98,5 +118,18 @@ if (!function_exists('holiday_type_badge')) {
         ];
         [$cls, $label] = $map[$tipe] ?? ['bg-secondary-subtle text-secondary', e(ucfirst($tipe))];
         return '<span class="badge rounded-pill ' . $cls . '">' . $label . '</span>';
+    }
+}
+
+if (!function_exists('day_name_id')) {
+    /**
+     * Get Indonesian day name from date string
+     * @param string $date Date string (Y-m-d format)
+     * @return string Indonesian day name (e.g., 'Senin', 'Selasa', etc.)
+     */
+    function day_name_id(string $date): string
+    {
+        $hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+        return $hari[(int)date('w', strtotime($date))];
     }
 }

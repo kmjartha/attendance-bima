@@ -117,21 +117,45 @@ class LaporanController extends Controller
         $summary = $att->summaryRange($id, $startDate, $endDate);
         $history = $att->historyRange($id, $startDate, $endDate);
 
+        // Build complete date range with attendance status
         $labels = $hadirSeries = $telatSeries = [];
         $cursor = strtotime($startDate);
         $endTs  = strtotime($endDate);
         $byDay = [];
         foreach ($history as $h) {
-            $byDay[$h['tanggal']] = $h['status'];
+            $byDay[$h['tanggal']] = $h;
         }
+        
+        // Build full history with all dates in range
+        $fullHistory = [];
         while ($cursor <= $endTs) {
             $dayKey = date('Y-m-d', $cursor);
             $labels[] = date('d M', $cursor);
-            $st = $byDay[$dayKey] ?? '';
+            
+            if (isset($byDay[$dayKey])) {
+                $fullHistory[] = $byDay[$dayKey];
+                $st = $byDay[$dayKey]['status'];
+            } else {
+                $fullHistory[] = [
+                    'tanggal' => $dayKey,
+                    'status' => 'alpha',
+                    'jam_masuk' => null,
+                    'jam_keluar' => null,
+                    'shift_nama' => null,
+                    'terlambat_menit' => null,
+                    'keterangan' => null,
+                    'face_match_score' => null
+                ];
+                $st = 'alpha';
+            }
+            
             $hadirSeries[] = $st === 'hadir' ? 1 : 0;
             $telatSeries[] = $st === 'telat' ? 1 : 0;
             $cursor += 86400;
         }
+        
+        // Sort full history by date ascending for display
+        usort($fullHistory, fn($a, $b) => strcmp($a['tanggal'], $b['tanggal']));
 
         return $this->render('laporan.karyawan_detail', [
             'title'       => 'Laporan: ' . $karyawan['nama'],
@@ -139,7 +163,7 @@ class LaporanController extends Controller
             'startDate'   => $startDate,
             'endDate'     => $endDate,
             'summary'     => $summary,
-            'history'     => $history,
+            'history'     => $fullHistory,
             'labels'      => $labels,
             'hadirSeries' => $hadirSeries,
             'telatSeries' => $telatSeries,
@@ -391,6 +415,35 @@ class LaporanController extends Controller
         $sum   = $att->summaryRange($id, $startDate, $endDate);
         $hist  = $att->historyRange($id, $startDate, $endDate);
 
+        // Build complete date range with attendance status
+        $byDay = [];
+        foreach ($hist as $h) {
+            $byDay[$h['tanggal']] = $h;
+        }
+        
+        // Build full history with all dates in range
+        $fullHistory = [];
+        $cursor = strtotime($startDate);
+        $endTs  = strtotime($endDate);
+        while ($cursor <= $endTs) {
+            $dayKey = date('Y-m-d', $cursor);
+            if (isset($byDay[$dayKey])) {
+                $fullHistory[] = $byDay[$dayKey];
+            } else {
+                $fullHistory[] = [
+                    'tanggal' => $dayKey,
+                    'status' => 'alpha',
+                    'jam_masuk' => null,
+                    'jam_keluar' => null,
+                    'shift_nama' => null,
+                    'terlambat_menit' => null,
+                    'keterangan' => null,
+                    'face_match_score' => null
+                ];
+            }
+            $cursor += 86400;
+        }
+
         $periodLabel = format_date_id($startDate) . ' s.d. ' . format_date_id($endDate);
         $fname = "Laporan_{$karyawan['niy']}_{$startDate}_{$endDate}.xls";
         $this->excelHeaders($fname);
@@ -415,9 +468,9 @@ class LaporanController extends Controller
               . '<th>Tanggal</th><th>Shift</th><th>Jam Masuk</th><th>Menit Telat</th><th>Alasan Telat</th><th>Jam Keluar</th>'
               . '<th>Status</th><th>Match Score</th>'
               . '</tr></thead><tbody>';
-        foreach ($hist as $h) {
+        foreach ($fullHistory as $h) {
             $html .= '<tr>'
-                  . '<td>'.htmlspecialchars($h['tanggal']).'</td>'
+                  . '<td>'.htmlspecialchars(format_date_with_day_id($h['tanggal'])).'</td>'
                   . '<td>'.htmlspecialchars((string)($h['shift_nama'] ?? '-')).'</td>'
                 . '<td>'.htmlspecialchars((string)($h['jam_masuk'] ?? '-')).'</td>'
                 . '<td>'.(isset($h['terlambat_menit']) && $h['terlambat_menit']!==null ? (int)$h['terlambat_menit'] : '-').'</td>'
@@ -428,7 +481,7 @@ class LaporanController extends Controller
                             ? number_format((float)$h['face_match_score'],3) : '-').'</td>'
                   . '</tr>';
         }
-        if (!$hist) $html .= '<tr><td colspan="8">Tidak ada data absensi pada periode ini.</td></tr>';
+        if (!$fullHistory) $html .= '<tr><td colspan="8">Tidak ada data absensi pada periode ini.</td></tr>';
         $html .= '</tbody></table></body></html>';
         echo $html;
         return '';
