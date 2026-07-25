@@ -8,8 +8,6 @@ use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\NotificationRead;
 use App\Models\User;
-use App\Models\RolePolicy;
-use App\Models\UserShift;
 use App\Models\Holiday;
 
 class DashboardController extends Controller
@@ -77,18 +75,9 @@ class DashboardController extends Controller
         $me         = (new User())->find((int)$u['id']);
         $today      = $attendance->todayFor((int)$u['id']);
 
-        $policy     = (new RolePolicy())->forRole((int)$me['role_id']);
-        $assignment = (new UserShift())->defaultAssignment((int)$u['id']);
         $todayDate  = date('Y-m-d');
-        if ($assignment && !empty($assignment['jam_masuk']) && !empty($assignment['jam_keluar'])) {
-            $sm = strtotime($assignment['jam_masuk']);
-            $sk = strtotime($assignment['jam_keluar']);
-            if ($sk <= $sm && strtotime(date('H:i:s')) < $sk) {
-                $todayDate = date('Y-m-d', strtotime('-1 day'));
-            }
-        }
         $holiday    = (new Holiday())->findBy('tanggal', $todayDate);
-        $isOffDay   = is_exempt_from_alpha($policy, $assignment, $todayDate, $holiday);
+        $isHoliday  = (bool)$holiday;
 
         return $this->render('dashboard.pegawai', [
             'title'         => 'Beranda',
@@ -97,7 +86,7 @@ class DashboardController extends Controller
             'me'            => $me,
             'streak'        => $attendance->streakFor((int)$u['id']),
             'jam_minggu'    => $attendance->workHoursThisWeek((int)$u['id']),
-            'is_off_day'    => $isOffDay,
+            'is_holiday'     => $isHoliday,
             'holiday'       => $holiday,
         ], 'mobile');
     }

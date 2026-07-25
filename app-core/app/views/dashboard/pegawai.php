@@ -18,16 +18,12 @@
   </div>
 </div>
 
-<?php if (!empty($is_off_day) && !$today): ?>
+<?php if (!empty($holiday) && !$today): ?>
 <div class="card-soft mb-3" style="padding:1.1rem;text-align:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
   <div style="font-size:2rem;line-height:1">🌴</div>
   <div style="font-weight:700;font-size:1.05rem;margin-top:.35rem">Selamat Liburan!</div>
   <div class="text-muted-soft" style="font-size:.85rem;margin-top:.2rem">
-    <?php if ($holiday): ?>
-      Hari ini libur — <?= e($holiday['keterangan']) ?>. Anda tidak perlu absen.
-    <?php else: ?>
-      Hari ini bukan hari kerja Anda. Anda tidak perlu absen.
-    <?php endif; ?>
+    Hari ini libur — <?= e($holiday['keterangan']) ?>. Anda tidak perlu absen.
   </div>
 </div>
 <?php else: ?>
@@ -57,7 +53,7 @@
 
 <div class="mobile-section-title">Aksi Cepat</div>
 <div class="mobile-action-grid">
-  <?php if (!empty($is_off_day) && !$today): ?>
+  <?php if (!empty($holiday) && !$today): ?>
     <div class="mobile-action-btn" style="opacity:.55;pointer-events:none">
       <div class="ico"><i class="bi bi-camera-fill"></i></div>
       <div class="label">Libur Hari Ini</div>
