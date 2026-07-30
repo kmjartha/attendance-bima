@@ -35,6 +35,7 @@
         <dt class="col-sm-4">NIY</dt>            <dd class="col-sm-8"><code><?= e($user['niy']) ?></code></dd>
         <dt class="col-sm-4">Email</dt>          <dd class="col-sm-8"><?= e($user['email'] ?? '-') ?></dd>
         <dt class="col-sm-4">No. HP</dt>         <dd class="col-sm-8"><?= e($user['phone'] ?? '-') ?></dd>
+        <dt class="col-sm-4">Jenis Karyawan</dt>  <dd class="col-sm-8"><?= $user['jenis_karyawan'] === 'kontrak_yayasan' ? 'Karyawan Kontrak Yayasan' : ($user['jenis_karyawan'] === 'kontrak' ? 'Karyawan Kontrak' : '-') ?></dd>
         <dt class="col-sm-4">Jumlah Cuti</dt>    <dd class="col-sm-8"><?= (int)$user['jumlah_cuti'] ?> hari/tahun</dd>
         <dt class="col-sm-4">Shift</dt>          <dd class="col-sm-8">
           <?php if (!empty($shifts)): ?>

@@ -11,6 +11,18 @@ use App\Models\UserShift;
 
 class KaryawanController extends Controller
 {
+    /** Jumlah cuti standar per jenis karyawan — dipakai jaga-jaga di server, JS di form cuma bantu isi otomatis. */
+    public const KUOTA_CUTI = [
+        'kontrak'         => 7,
+        'kontrak_yayasan' => 12,
+    ];
+
+    private function jenisKaryawanFromPost(): ?string
+    {
+        $val = trim((string)($_POST['jenis_karyawan'] ?? ''));
+        return array_key_exists($val, self::KUOTA_CUTI) ? $val : null;
+    }
+
     private function guard(): void
     {
         if (!has_role('HRD')) {
@@ -99,6 +111,8 @@ class KaryawanController extends Controller
         // Upload foto profile
         $fotoName = $this->saveProfilePhoto('foto_profile');
 
+        $jenisKaryawan = $this->jenisKaryawanFromPost();
+
         $data = [
             'niy'              => trim($_POST['niy']),
             'nama'             => trim($_POST['nama']),
@@ -108,6 +122,7 @@ class KaryawanController extends Controller
             'phone'            => trim($_POST['phone'] ?? '') ?: null,
             'foto_profile'     => $fotoName,
             'face_descriptor'  => trim($_POST['face_descriptor'] ?? '') ?: null,
+            'jenis_karyawan'   => $jenisKaryawan,
             'jumlah_cuti'      => (int)($_POST['jumlah_cuti'] ?? 12),
             'latitude_kantor'  => $_POST['latitude_kantor'] ?? null,
             'longitude_kantor' => $_POST['longitude_kantor'] ?? null,
@@ -184,6 +199,8 @@ class KaryawanController extends Controller
             return $this->redirect('/karyawan/' . $id . '/edit');
         }
 
+        $jenisKaryawan = $this->jenisKaryawanFromPost();
+
         $data = [
             'niy'              => trim($_POST['niy']),
             'nama'             => trim($_POST['nama']),
@@ -191,6 +208,7 @@ class KaryawanController extends Controller
             'role_id'          => (int)$_POST['role_id'],
             'email'            => trim($_POST['email'] ?? '') ?: null,
             'phone'            => trim($_POST['phone'] ?? '') ?: null,
+            'jenis_karyawan'   => $jenisKaryawan,
             'jumlah_cuti'      => (int)($_POST['jumlah_cuti'] ?? 12),
             'latitude_kantor'  => $_POST['latitude_kantor'] ?? null,
             'longitude_kantor' => $_POST['longitude_kantor'] ?? null,
