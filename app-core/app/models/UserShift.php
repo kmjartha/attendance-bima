@@ -130,6 +130,53 @@ class UserShift extends Model
     }
 
     /**
+     * Shift yang BENAR-BENAR terjadwal utk user pada tanggal tertentu,
+     * berdasarkan hari_aktif masing-masing shift yang di-assign ke dia.
+     *
+     * Kenapa perlu ini: user yang di-assign LEBIH DARI SATU shift (mis.
+     * "Shift Staff & Guru" Senin-Jumat 07:30 + "Shift Staff Sabtu" 09:00)
+     * sebelumnya selalu jatuh ke shift yang ditandai "default" (assignment
+     * pertama), TIDAK PEDULI hari apa sekarang. Akibatnya kalau shift
+     * default-nya kebetulan shift weekday (07:30) tapi hari ini Sabtu
+     * (yang jadwalnya harusnya shift 09:00), orang yang datang jam 08:xx
+     * salah dihitung telat -- padahal utk shift Sabtu-nya dia belum
+     * telat sama sekali.
+     *
+     * Urutan pemilihan:
+     *   1. Kalau ada shift assignment yang hari_aktif-nya mencakup hari
+     *      ini -> pakai itu (kalau lebih dari satu yang cocok, pilih yg
+     *      is_default duluan, baru yang jam_masuk paling pagi).
+     *   2. Kalau TIDAK ADA yang cocok hari_aktif-nya dgn hari ini ->
+     *      fallback ke shift default biasa (perilaku lama), supaya user
+     *      yang cuma punya 1 shift atau datanya belum granular tetap
+     *      jalan normal seperti biasa.
+     */
+    public function shiftForDate(int $userId, string $date): ?array
+    {
+        $stmt = $this->db()->prepare(
+            "SELECT s.*, us.is_default
+             FROM user_shifts us
+             JOIN shifts s ON s.id = us.shift_id
+             WHERE us.user_id = ?
+             ORDER BY us.is_default DESC, s.jam_masuk ASC"
+        );
+        $stmt->execute([$userId]);
+        $rows = $stmt->fetchAll();
+        if (empty($rows)) return null;
+
+        $dayName = indo_day_name($date);
+        foreach ($rows as $row) {
+            $hariAktif = array_map('trim', explode(',', (string)($row['hari_aktif'] ?? '')));
+            if (in_array($dayName, $hariAktif, true)) {
+                return $row;
+            }
+        }
+
+        // Tidak ada shift yang hari_aktif-nya cocok hari ini -> fallback ke default lama.
+        return $rows[0];
+    }
+
+    /**
      * Assignment shift default seorang user, digabung dengan detail jam &
      * hari_aktif dari shift-nya. Dipakai untuk menentukan jam batas alpha
      * dan hari efektif kerja (lihat helpers/policy.php).

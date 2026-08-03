@@ -31,7 +31,8 @@ class AbsensiController extends Controller
         $att        = (new Attendance())->todayFor((int)$u['id']);
 
         $userShiftModel = new UserShift();
-        $shiftId = $userShiftModel->defaultShiftId((int)$u['id']);
+        $todayShift = $userShiftModel->shiftForDate((int)$u['id'], date('Y-m-d'));
+        $shiftId = $todayShift['id'] ?? $userShiftModel->defaultShiftId((int)$u['id']);
         $shift   = $shiftId ? (new Shift())->find($shiftId) : null;
         $userShifts = $userShiftModel->shiftsFor((int)$u['id']);
 
@@ -162,7 +163,7 @@ class AbsensiController extends Controller
         }
         $shiftId = $selectedShiftId
             ? $selectedShiftId
-            : $userShiftModel->defaultShiftId((int)$me['id']);
+            : ($userShiftModel->shiftForDate((int)$me['id'], date('Y-m-d'))['id'] ?? null);
         $shift   = $shiftId ? (new Shift())->find($shiftId) : null;
 
         $now = current_time();
