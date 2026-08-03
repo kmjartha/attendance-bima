@@ -5,6 +5,7 @@
 
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
+use App\Middleware\HrdOnly;
 
 /** @var \App\Core\Router $router */
 
@@ -54,11 +55,11 @@ $router->get ("/absensi",          "AbsensiController@form",    [AuthMiddleware:
 $router->post("/absensi/submit",   "AbsensiController@submit",  [AuthMiddleware::class, CsrfMiddleware::class]);
 $router->get ("/absensi/riwayat",  "AbsensiController@riwayat", [AuthMiddleware::class]);
 
-// ========= Cuti / Sakit (semua user) =========
-$router->get ("/cuti",            "CutiController@index",  [AuthMiddleware::class]);
-$router->get ("/cuti/create",     "CutiController@create", [AuthMiddleware::class]);
-$router->post("/cuti/create",     "CutiController@store",  [AuthMiddleware::class, CsrfMiddleware::class]);
-$router->post("/cuti/{id}/delete", "CutiController@destroy", [AuthMiddleware::class, CsrfMiddleware::class]);
+// ========= Cuti / Sakit (HRD saja) =========
+$router->get ("/cuti",            "CutiController@index",  [AuthMiddleware::class, HrdOnly::class]);
+$router->get ("/cuti/create",     "CutiController@create", [AuthMiddleware::class, HrdOnly::class]);
+$router->post("/cuti/create",     "CutiController@store",  [AuthMiddleware::class, CsrfMiddleware::class, HrdOnly::class]);
+$router->post("/cuti/{id}/delete", "CutiController@destroy", [AuthMiddleware::class, CsrfMiddleware::class, HrdOnly::class]);
 
 // ========= Verifikasi Cuti (HRD/Kepsek) =========
 $router->get ("/verifikasi-cuti",                "VerifikasiController@index",  [AuthMiddleware::class]);

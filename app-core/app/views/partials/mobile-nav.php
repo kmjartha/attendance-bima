@@ -28,9 +28,11 @@
     <i class="bi bi-camera-fill"></i><span>Absen</span>
   </a>
   <?php endif; ?>
+  <?php if (has_role('HRD')): ?>
   <a href="<?= url('/cuti') ?>" class="<?= is_active('/cuti') ?>">
     <i class="bi bi-calendar-event"></i><span>Cuti</span>
   </a>
+  <?php endif; ?>
   <a href="<?= url('/notifikasi') ?>" class="<?= is_active('/notifikasi') ?> nav-with-dot">
     <i class="bi bi-bell-fill"></i><span>Notif</span>
     <?php if ($unreadNav > 0): ?><span class="dot-badge"><?= $unreadNav > 9 ? '9+' : $unreadNav ?></span><?php endif; ?>

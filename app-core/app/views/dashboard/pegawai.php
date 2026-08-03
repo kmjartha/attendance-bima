@@ -71,11 +71,13 @@
     <div class="label">Riwayat</div>
     <div class="sub">Histori absensi</div>
   </a>
+  <?php if (has_role('HRD')): ?>
   <a href="<?= url('/cuti') ?>" class="mobile-action-btn">
     <div class="ico"><i class="bi bi-calendar-event"></i></div>
     <div class="label">Ajukan Cuti</div>
     <div class="sub">Sakit / Tahunan</div>
   </a>
+  <?php endif; ?>
   <a href="<?= url('/laporan') ?>" class="mobile-action-btn">
     <div class="ico"><i class="bi bi-bar-chart-fill"></i></div>
     <div class="label">Laporan</div>
