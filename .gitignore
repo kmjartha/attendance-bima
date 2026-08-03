@@ -8,6 +8,7 @@
 # Storage & cache
 /app-core/storage/logs/*
 /app-core/storage/cache/*
+/app-core/database.sql
 !/app-core/storage/logs/.gitkeep
 !/app-core/storage/cache/.gitkeep
 
@@ -29,3 +30,4 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+

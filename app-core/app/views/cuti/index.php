@@ -47,6 +47,12 @@
               <?php endif; ?>
             </div>
           <?php endif; ?>
+          <?php if ($r['status'] === 'approved'): ?>
+            <form method="post" action="<?= url('/cuti/' . $r['id'] . '/delete') ?>" class="mt-2 form-confirm-delete">
+              <?= csrf_field() ?>
+              <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+            </form>
+          <?php endif; ?>
         </div>
       </div>
     <?php endforeach; ?>

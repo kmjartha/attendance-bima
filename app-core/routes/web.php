@@ -58,6 +58,7 @@ $router->get ("/absensi/riwayat",  "AbsensiController@riwayat", [AuthMiddleware:
 $router->get ("/cuti",            "CutiController@index",  [AuthMiddleware::class]);
 $router->get ("/cuti/create",     "CutiController@create", [AuthMiddleware::class]);
 $router->post("/cuti/create",     "CutiController@store",  [AuthMiddleware::class, CsrfMiddleware::class]);
+$router->post("/cuti/{id}/delete", "CutiController@destroy", [AuthMiddleware::class, CsrfMiddleware::class]);
 
 // ========= Verifikasi Cuti (HRD/Kepsek) =========
 $router->get ("/verifikasi-cuti",                "VerifikasiController@index",  [AuthMiddleware::class]);

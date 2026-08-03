@@ -76,6 +76,31 @@ class Attendance extends Model
         return $written;
     }
 
+    public function deleteLeaveRowsForApprovedLeave(array $leave): int
+    {
+        $userId = (int)$leave['user_id'];
+        $cursor = strtotime($leave['tanggal_mulai']);
+        $end    = strtotime($leave['tanggal_selesai']);
+        if ($cursor === false || $end === false || $cursor > $end) {
+            return 0;
+        }
+
+        $label = 'Cuti ' . ($leave['jenis'] === 'sakit' ? 'sakit' : $leave['jenis']) . ' disetujui';
+        $stmt  = $this->db()->prepare(
+            "DELETE FROM {$this->table} WHERE user_id = ? AND tanggal = ? " .
+            "AND status IN ('izin','sakit') AND keterangan = ?"
+        );
+
+        $deleted = 0;
+        while ($cursor <= $end) {
+            $stmt->execute([$userId, date('Y-m-d', $cursor), $label]);
+            $deleted += $stmt->rowCount();
+            $cursor = strtotime('+1 day', $cursor);
+        }
+
+        return $deleted;
+    }
+
     public function findByUserDate(int $userId, string $date): ?array
     {
         $stmt = $this->db()->prepare("SELECT * FROM attendances WHERE user_id = ? AND tanggal = ? LIMIT 1");

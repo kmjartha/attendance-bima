@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Core\Validator;
 use App\Core\App;
+use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\User;
 
@@ -105,6 +106,47 @@ class CutiController extends Controller
 
         unset($_SESSION['_old'], $_SESSION['_errors']);
         $this->flash('success', 'Pengajuan cuti berhasil dikirim. Menunggu verifikasi.');
+        return $this->redirect('/cuti');
+    }
+
+    public function destroy(string $id): string
+    {
+        $model = new LeaveRequest();
+        $row   = $model->find((int)$id);
+        if (!$row) {
+            $this->flash('error', 'Pengajuan cuti tidak ditemukan.');
+            return $this->redirect('/cuti');
+        }
+
+        if ((int)$row['user_id'] !== (int)(user()['id'] ?? 0)) {
+            http_response_code(403);
+            return $this->render('errors.403', ['title' => '403'], 'auth');
+        }
+
+        if ($row['status'] === 'approved') {
+            if ($row['jenis'] !== 'sakit') {
+                $days = max(1, (int)((strtotime($row['tanggal_selesai']) - strtotime($row['tanggal_mulai'])) / 86400) + 1);
+                $userModel = new User();
+                $user = $userModel->find((int)$row['user_id']);
+                if ($user) {
+                    $userModel->update((int)$row['user_id'], [
+                        'jumlah_cuti' => max(0, (int)$user['jumlah_cuti'] + $days),
+                    ]);
+                }
+            }
+
+            (new Attendance())->deleteLeaveRowsForApprovedLeave($row);
+        }
+
+        if (!empty($row['file_surat'])) {
+            $filePath = PUBLIC_PATH . '/uploads/' . $row['file_surat'];
+            if (is_file($filePath)) {
+                @unlink($filePath);
+            }
+        }
+
+        $model->delete((int)$id);
+        $this->flash('success', 'Pengajuan cuti berhasil dihapus.');
         return $this->redirect('/cuti');
     }
 

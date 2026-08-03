@@ -11,8 +11,8 @@ class User extends Model
     public function findByNiy(string $niy): ?array
     {
         $stmt = $this->db()->prepare(
-            "SELECT u.*, r.name AS role_name
-             FROM users u JOIN roles r ON r.id = u.role_id
+            "SELECT u.*, COALESCE(r.name, '') AS role_name
+             FROM users u LEFT JOIN roles r ON r.id = u.role_id
              WHERE u.niy = ? LIMIT 1"
         );
         $stmt->execute([$niy]);
@@ -22,8 +22,8 @@ class User extends Model
     public function findWithRole(int $id): ?array
     {
         $stmt = $this->db()->prepare(
-            "SELECT u.*, r.name AS role_name
-             FROM users u JOIN roles r ON r.id = u.role_id
+            "SELECT u.*, COALESCE(r.name, '') AS role_name
+             FROM users u LEFT JOIN roles r ON r.id = u.role_id
              WHERE u.id = ? LIMIT 1"
         );
         $stmt->execute([$id]);
@@ -33,8 +33,8 @@ class User extends Model
     public function allWithRole(): array
     {
         return $this->db()->query(
-            "SELECT u.*, r.name AS role_name
-             FROM users u JOIN roles r ON r.id = u.role_id
+            "SELECT u.*, COALESCE(r.name, '') AS role_name
+             FROM users u LEFT JOIN roles r ON r.id = u.role_id
              ORDER BY u.nama ASC"
         )->fetchAll();
     }
