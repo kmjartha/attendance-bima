@@ -62,32 +62,6 @@
           <label class="form-label">Jumlah Cuti</label>
           <input type="number" name="jumlah_cuti" id="input-jumlah-cuti" value="<?= e($user['jumlah_cuti']) ?>" class="form-control" min="0" max="60">
         </div>
-        <div class="col-md-6">
-          <label class="form-label">Jenis Karyawan</label>
-          <div style="border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
-            <label class="d-flex align-items-center justify-content-between gap-2" style="padding:.55rem .85rem; margin:0; cursor:pointer;">
-              <span class="d-flex align-items-center gap-2">
-                <input type="radio" name="jenis_karyawan" value="kontrak" class="form-check-input m-0" onchange="jenisKaryawanChange(this)" <?= ($user['jenis_karyawan'] ?? '')==='kontrak'?'checked':'' ?>>
-                <span>Karyawan Kontrak</span>
-              </span>
-              <span class="badge bg-secondary-subtle text-secondary">7 hari/tahun</span>
-            </label>
-            <label class="d-flex align-items-center justify-content-between gap-2" style="padding:.55rem .85rem; margin:0; cursor:pointer; border-top:1px solid #f1f3f5;">
-              <span class="d-flex align-items-center gap-2">
-                <input type="radio" name="jenis_karyawan" value="kontrak_yayasan" class="form-check-input m-0" onchange="jenisKaryawanChange(this)" <?= ($user['jenis_karyawan'] ?? '')==='kontrak_yayasan'?'checked':'' ?>>
-                <span>Karyawan Kontrak Yayasan</span>
-              </span>
-              <span class="badge bg-secondary-subtle text-secondary">12 hari/tahun</span>
-            </label>
-          </div>
-          <small class="text-muted">Pilih jenis otomatis mengisi Jumlah Cuti di samping — masih bisa diubah manual kalau perlu.</small>
-        </div>
-        <script>
-        function jenisKaryawanChange(radio) {
-          var field = document.getElementById('input-jumlah-cuti');
-          if (field) field.value = radio.value === 'kontrak' ? 7 : 12;
-        }
-        </script>
 
         <div class="col-12"><hr></div>
         <div class="col-12"><h5><i class="bi bi-geo-alt"></i> Geofence Kantor</h5></div>
