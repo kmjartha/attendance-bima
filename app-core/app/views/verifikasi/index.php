@@ -91,6 +91,12 @@
                   <?= $r['verifier_nama'] ? 'oleh '.e($r['verifier_nama']) : '' ?>
                 </span>
               <?php endif; ?>
+              <?php if (has_role('HRD')): ?>
+                <form method="post" action="<?= url('/cuti/'.$r['id'].'/delete') ?>" class="d-inline-block mt-2">
+                  <?= csrf_field() ?>
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                </form>
+              <?php endif; ?>
             </td>
           </tr>
         <?php endforeach; ?>

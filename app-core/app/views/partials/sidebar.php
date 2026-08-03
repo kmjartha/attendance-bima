@@ -21,8 +21,6 @@
       <a href="<?= url('/absensi/riwayat') ?>" class="<?= is_active('/absensi/riwayat') ?>">
         <i class="bi bi-clock-history"></i> Riwayat Absensi
       </a>
-    <?php endif; ?>
-    <?php if (has_role('HRD')): ?>
       <a href="<?= url('/cuti') ?>" class="<?= is_active('/cuti') ?>">
         <i class="bi bi-calendar-event"></i> Cuti / Sakit
       </a>

@@ -118,7 +118,7 @@ class CutiController extends Controller
             return $this->redirect('/cuti');
         }
 
-        if ((int)$row['user_id'] !== (int)(user()['id'] ?? 0)) {
+        if (!has_role('HRD')) {
             http_response_code(403);
             return $this->render('errors.403', ['title' => '403'], 'auth');
         }
