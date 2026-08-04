@@ -123,6 +123,11 @@ class CutiController extends Controller
             return $this->render('errors.403', ['title' => '403'], 'auth');
         }
 
+        $redirect = '/cuti';
+        if (!empty($_POST['redirect_to']) && str_starts_with($_POST['redirect_to'], '/')) {
+            $redirect = $_POST['redirect_to'];
+        }
+
         if ($row['status'] === 'approved') {
             if ($row['jenis'] !== 'sakit') {
                 $days = max(1, (int)((strtotime($row['tanggal_selesai']) - strtotime($row['tanggal_mulai'])) / 86400) + 1);
@@ -147,7 +152,7 @@ class CutiController extends Controller
 
         $model->delete((int)$id);
         $this->flash('success', 'Pengajuan cuti berhasil dihapus.');
-        return $this->redirect('/cuti');
+        return $this->redirect($redirect);
     }
 
     private function saveDocument(array $file): ?string

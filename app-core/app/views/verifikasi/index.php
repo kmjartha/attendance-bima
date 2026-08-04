@@ -94,6 +94,7 @@
               <?php if (has_role('HRD')): ?>
                 <form method="post" action="<?= url('/cuti/'.$r['id'].'/delete') ?>" class="d-inline-block mt-2">
                   <?= csrf_field() ?>
+                  <input type="hidden" name="redirect_to" value="<?= e(url('/verifikasi-cuti' . ($status ? '?status=' . urlencode($status) : ''))) ?>">
                   <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
                 </form>
               <?php endif; ?>

@@ -61,7 +61,7 @@ abstract class Model
 
     public function delete($id): bool
     {
-        $stmt = $this->db()->prepare("DELETE FROM {$this->table} WHERE {$this->primaryKey} = ?");
+        $stmt = $this->db()->prepare("DELETE FROM {$this->table} WHERE {$this->primaryKey} = ? LIMIT 1");
         return $stmt->execute([$id]);
     }
 
