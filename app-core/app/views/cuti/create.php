@@ -17,11 +17,11 @@
 
   <div class="row g-2 mb-3">
     <div class="col-6">
-      <label class="form-label fw-semibold">Tanggal Mulai</label>
+      <label class="form-label fw-semibold">Tgl Mulai Cuti </label>
       <input type="date" name="tanggal_mulai" class="form-control <?= isset($errors['tanggal_mulai'])?'is-invalid':'' ?>" value="<?= e(old('tanggal_mulai')) ?>" required>
     </div>
     <div class="col-6">
-      <label class="form-label fw-semibold">Tanggal Selesai</label>
+      <label class="form-label fw-semibold">Tgl Cuti Terakhir</label>
       <input type="date" name="tanggal_selesai" class="form-control <?= isset($errors['tanggal_selesai'])?'is-invalid':'' ?>" value="<?= e(old('tanggal_selesai')) ?>" required>
       <?php if(isset($errors['tanggal_selesai'])): ?><div class="invalid-feedback d-block"><?= e($errors['tanggal_selesai']) ?></div><?php endif; ?>
     </div>
