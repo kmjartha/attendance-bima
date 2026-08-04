@@ -124,8 +124,19 @@ class CutiController extends Controller
         }
 
         $redirect = '/cuti';
-        if (!empty($_POST['redirect_to']) && str_starts_with($_POST['redirect_to'], '/')) {
-            $redirect = $_POST['redirect_to'];
+        if (!empty($_POST['redirect_to'])) {
+            $redirectTo = $_POST['redirect_to'];
+            if (str_starts_with($redirectTo, '/')) {
+                $redirect = $redirectTo;
+            } elseif (filter_var($redirectTo, FILTER_VALIDATE_URL)) {
+                $parsed = parse_url($redirectTo);
+                if (!empty($parsed['path'])) {
+                    $redirect = $parsed['path'];
+                    if (!empty($parsed['query'])) {
+                        $redirect .= '?' . $parsed['query'];
+                    }
+                }
+            }
         }
 
         if ($row['status'] === 'approved') {
