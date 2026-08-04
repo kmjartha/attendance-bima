@@ -20,10 +20,11 @@ class Attendance extends Model
      * SUDAH lama disetujui sebelum perbaikan ini ada.
      *
      * Aturan: hanya menulis utk tanggal yang memang hari kerja efektif
-     * karyawan tsb (skip weekend/libur yang tidak relevan). Baris yang
-     * sudah ada & sudah 'hadir'/'telat'/'izin'/'sakit' TIDAK ditimpa --
-     * cuma baris kosong atau yang berstatus 'alpha' (mis. sudah keburu
-     * ditandai alpha oleh cron sebelum pengajuan cutinya di-approve).
+     * karyawan tsb (skip weekend/libur yang tidak relevan). Kalau ada
+     * baris attendances yang sudah ada, kami perbarui menjadi status cuti
+     * yang disetujui supaya laporan konsisten dengan pengajuan cuti yang
+     * sedang diapprove, termasuk saat ada data 'hadir'/'telat'/'alpha'
+     * yang sebelumnya tersisa.
      *
      * @return int jumlah baris yang ditulis/diperbarui
      */
@@ -63,11 +64,10 @@ class Attendance extends Model
                         'keterangan' => $label,
                     ]);
                     $written++;
-                } elseif ($existing['status'] === 'alpha') {
+                } elseif ($existing['status'] !== $status || ($existing['keterangan'] ?? '') !== $label) {
                     $this->update((int)$existing['id'], ['status' => $status, 'keterangan' => $label]);
                     $written++;
                 }
-                // status lain (hadir/telat/izin/sakit) sengaja tidak ditimpa.
             }
 
             $cursor = strtotime('+1 day', $cursor);

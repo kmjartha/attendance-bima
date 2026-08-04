@@ -21,7 +21,7 @@
       <input type="date" name="tanggal_mulai" class="form-control <?= isset($errors['tanggal_mulai'])?'is-invalid':'' ?>" value="<?= e(old('tanggal_mulai')) ?>" required>
     </div>
     <div class="col-6">
-      <label class="form-label fw-semibold">Tgl Cuti Terakhir</label>
+      <label class="form-label fw-semibold">Tgl Terakhir Cuti</label>
       <input type="date" name="tanggal_selesai" class="form-control <?= isset($errors['tanggal_selesai'])?'is-invalid':'' ?>" value="<?= e(old('tanggal_selesai')) ?>" required>
       <?php if(isset($errors['tanggal_selesai'])): ?><div class="invalid-feedback d-block"><?= e($errors['tanggal_selesai']) ?></div><?php endif; ?>
     </div>
