@@ -103,14 +103,27 @@
    * telat parah. Sekarang: kalau karyawan punya >1 shift, dia SELALU diminta
    * memilih sendiri shift mana yang mau dipakai.
    */
+  function getCurrentDayName(date = new Date()) {
+    return ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date.getDay()];
+  }
+
+  function shiftMatchesDay(shift, dayName) {
+    if (!shift || !shift.hari_aktif) return true;
+    const days = String(shift.hari_aktif).split(',').map((d) => d.trim()).filter(Boolean);
+    return days.includes(dayName);
+  }
+
   function getShiftCandidates() {
     const shifts = Array.isArray(cfg.userShifts) ? cfg.userShifts : [];
     if (!shifts.length) return [];
 
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const dayName = getCurrentDayName(now);
+    const relevantShifts = shifts.filter((shift) => shiftMatchesDay(shift, dayName));
+    const pool = relevantShifts.length ? relevantShifts : shifts;
 
-    const annotated = shifts.map((shift) => Object.assign({}, shift, computeShiftMeta(shift, currentMinutes)));
+    const annotated = pool.map((shift) => Object.assign({}, shift, computeShiftMeta(shift, currentMinutes)));
     annotated.sort((a, b) => {
       if (a._isActive !== b._isActive) return a._isActive ? -1 : 1;
       return a._minutesUntilStart - b._minutesUntilStart;
@@ -275,7 +288,7 @@
     let selectedShift = null;
     if (type === 'masuk') {
       const candidates = getShiftCandidates();
-      const shouldPrompt = Array.isArray(cfg.userShifts) && cfg.userShifts.length > 1;
+      const shouldPrompt = Array.isArray(cfg.userShifts) && cfg.userShifts.length > 1 && candidates.length > 1;
       if (shouldPrompt) {
         const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
         const optionsHtml = candidates.map((shift, idx) => {

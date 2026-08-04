@@ -56,6 +56,44 @@ if (!function_exists('is_scheduled_workday')) {
     }
 }
 
+if (!function_exists('choose_shift_for_date')) {
+    /**
+     * Pilih shift yang paling relevan untuk tanggal tertentu dari kumpulan
+     * shift yang di-assign ke user. Jika ada shift yang hari_aktif-nya
+     * mencakup tanggal tersebut, prioritas diberikan ke shift yang cocok
+     * hari itu, lalu ke default assignment, lalu ke jam masuk paling pagi.
+     */
+    function choose_shift_for_date(array $rows, string $date): ?array
+    {
+        if (!$rows) return null;
+
+        $dayName = indo_day_name($date);
+        $matches = [];
+        foreach ($rows as $row) {
+            $hariAktif = array_map('trim', explode(',', (string)($row['hari_aktif'] ?? '')));
+            if (in_array($dayName, $hariAktif, true)) {
+                $matches[] = $row;
+            }
+        }
+
+        $sorter = function (array $a, array $b): int {
+            $aDefault = !empty($a['is_default']) ? 1 : 0;
+            $bDefault = !empty($b['is_default']) ? 1 : 0;
+            if ($aDefault !== $bDefault) {
+                return $bDefault <=> $aDefault;
+            }
+
+            $aStart = (string)($a['jam_masuk'] ?? '');
+            $bStart = (string)($b['jam_masuk'] ?? '');
+            return strcmp($aStart, $bStart);
+        };
+
+        $pool = $matches ?: $rows;
+        usort($pool, $sorter);
+        return $pool[0] ?? null;
+    }
+}
+
 if (!function_exists('is_exempt_from_alpha')) {
     /**
      * True jika user DIKECUALIKAN dari status alpha pada tanggal $date.

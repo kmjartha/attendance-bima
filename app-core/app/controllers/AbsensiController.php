@@ -161,9 +161,11 @@ class AbsensiController extends Controller
         if ($selectedShiftId && !in_array($selectedShiftId, $allowedShiftIds, true)) {
             return $this->json(['success'=>false,'message'=>'Shift yang dipilih tidak valid']);
         }
-        $shiftId = $selectedShiftId
+        $dateShift = $userShiftModel->shiftForDate((int)$me['id'], date('Y-m-d'));
+        $defaultShiftId = $dateShift['id'] ?? null;
+        $shiftId = $selectedShiftId && in_array($selectedShiftId, $allowedShiftIds, true)
             ? $selectedShiftId
-            : ($userShiftModel->shiftForDate((int)$me['id'], date('Y-m-d'))['id'] ?? null);
+            : $defaultShiftId;
         $shift   = $shiftId ? (new Shift())->find($shiftId) : null;
 
         $now = current_time();

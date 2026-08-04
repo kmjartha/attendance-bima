@@ -164,16 +164,7 @@ class UserShift extends Model
         $rows = $stmt->fetchAll();
         if (empty($rows)) return null;
 
-        $dayName = indo_day_name($date);
-        foreach ($rows as $row) {
-            $hariAktif = array_map('trim', explode(',', (string)($row['hari_aktif'] ?? '')));
-            if (in_array($dayName, $hariAktif, true)) {
-                return $row;
-            }
-        }
-
-        // Tidak ada shift yang hari_aktif-nya cocok hari ini -> fallback ke default lama.
-        return $rows[0];
+        return choose_shift_for_date($rows, $date) ?? $rows[0];
     }
 
     /**
