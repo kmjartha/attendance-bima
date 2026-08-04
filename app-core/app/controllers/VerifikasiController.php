@@ -31,7 +31,7 @@ class VerifikasiController extends Controller
         ]);
     }
 
-    /** POST /verifikasi-cuti/{id}/action */
+    /** POST /verifikasi-cuti/action */
     public function action(): string
     {
         if (!has_role('HRD','Supervisor','Kepsek')) return $this->forbid();
@@ -79,7 +79,7 @@ class VerifikasiController extends Controller
             $userM->update((int)$req['user_id'], ['jumlah_cuti' => $sisa]);
         }
 
-        $model->update((int)$id, [
+        $model->update($targetId, [
             'status'      => $newStatus,
             'verified_by' => user()['id'],
             'catatan'     => $catatan ?: null,
