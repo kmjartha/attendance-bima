@@ -55,7 +55,7 @@ abstract class Model
     {
         $sets = implode(',', array_map(fn($c) => "{$c} = :{$c}", array_keys($data)));
         $data[$this->primaryKey] = $id;
-        $sql  = "UPDATE {$this->table} SET {$sets} WHERE {$this->primaryKey} = :{$this->primaryKey}";
+        $sql  = "UPDATE {$this->table} SET {$sets} WHERE {$this->primaryKey} = :{$this->primaryKey} LIMIT 1";
         return $this->db()->prepare($sql)->execute($data);
     }
 

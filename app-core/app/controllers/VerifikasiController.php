@@ -32,13 +32,18 @@ class VerifikasiController extends Controller
     }
 
     /** POST /verifikasi-cuti/{id}/action */
-    public function action(string $id): string
+    public function action(): string
     {
         if (!has_role('HRD','Supervisor','Kepsek')) return $this->forbid();
 
         $model   = new LeaveRequest();
         $userM   = new User();
-        $req     = $model->findWithUser((int)$id);
+        $targetId = (int)($_POST['leave_id'] ?? 0);
+        if ($targetId <= 0) {
+            $this->flash('error', 'Pengajuan tidak ditemukan.');
+            return $this->redirect('/verifikasi-cuti');
+        }
+        $req = $model->findWithUser($targetId);
         if (!$req) { $this->flash('error', 'Pengajuan tidak ditemukan.'); return $this->redirect('/verifikasi-cuti'); }
 
         // Kepsek hanya boleh approve/reject pengajuan non-HRD.
