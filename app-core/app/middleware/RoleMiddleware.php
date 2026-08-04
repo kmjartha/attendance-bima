@@ -30,11 +30,6 @@ class RoleMiddleware
     }
 }
 
-class HrdOnly extends RoleMiddleware
-{
-    protected array $allowed = ['HRD'];
-}
-
 class HrdKepsek extends RoleMiddleware
 {
     protected array $allowed = ['HRD', 'Kepsek'];
