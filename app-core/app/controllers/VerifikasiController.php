@@ -31,7 +31,7 @@ class VerifikasiController extends Controller
         ]);
     }
 
-    /** POST /verifikasi-cuti/action */
+    /** POST /verifikasi-cuti/{id}/action */
     public function action(string $id = ''): string
     {
         if (!has_role('HRD','Supervisor','Kepsek')) return $this->forbid();
@@ -48,11 +48,16 @@ class VerifikasiController extends Controller
             }
         }
         if ($targetId <= 0) {
+            file_put_contents(APP_PATH . '/verif-debug.txt', "BAD_TARGET_ID\nREQUEST_URI=" . ($_SERVER['REQUEST_URI'] ?? '') . "\nPOST=" . json_encode($_POST) . "\n\n", FILE_APPEND);
             $this->flash('error', 'Pengajuan tidak ditemukan.');
             return $this->redirect('/verifikasi-cuti');
         }
         $req = $model->findWithUser($targetId);
-        if (!$req) { $this->flash('error', 'Pengajuan tidak ditemukan.'); return $this->redirect('/verifikasi-cuti'); }
+        if (!$req) {
+            file_put_contents(APP_PATH . '/verif-debug.txt', "NOT_FOUND\nTARGET_ID={$targetId}\nREQUEST_URI=" . ($_SERVER['REQUEST_URI'] ?? '') . "\nPOST=" . json_encode($_POST) . "\n\n", FILE_APPEND);
+            $this->flash('error', 'Pengajuan tidak ditemukan.');
+            return $this->redirect('/verifikasi-cuti');
+        }
 
         // Kepsek hanya boleh approve/reject pengajuan non-HRD.
         if (has_role('Kepsek') && !in_array($req['user_role'], ['Staff','Guru','Security'], true)) {
