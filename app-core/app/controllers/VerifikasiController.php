@@ -32,13 +32,21 @@ class VerifikasiController extends Controller
     }
 
     /** POST /verifikasi-cuti/action */
-    public function action(): string
+    public function action(string $id = ''): string
     {
         if (!has_role('HRD','Supervisor','Kepsek')) return $this->forbid();
 
         $model   = new LeaveRequest();
         $userM   = new User();
         $targetId = (int)($_POST['leave_id'] ?? 0);
+        if ($targetId <= 0 && !empty($id)) {
+            $targetId = (int)$id;
+        }
+        if ($targetId <= 0 && !empty($_SERVER['REQUEST_URI'])) {
+            if (preg_match('#/verifikasi-cuti/(\d+)/action#', $_SERVER['REQUEST_URI'], $matches)) {
+                $targetId = (int)$matches[1];
+            }
+        }
         if ($targetId <= 0) {
             $this->flash('error', 'Pengajuan tidak ditemukan.');
             return $this->redirect('/verifikasi-cuti');
