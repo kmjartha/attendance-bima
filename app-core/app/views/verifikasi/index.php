@@ -69,7 +69,7 @@
                 <?php foreach (['approve'=>['success','Setujui Pengajuan'],'reject'=>['danger','Tolak Pengajuan']] as $aksi=>$meta): ?>
                   <div class="modal fade" id="m<?= ucfirst($aksi) ?><?= $r['id'] ?>" tabindex="-1">
                     <div class="modal-dialog">
-                      <form method="post" action="<?= url('/verifikasi-cuti/'.$r['id'].'/action') ?>" class="modal-content">
+                      <form method="post" action="<?= url('/verifikasi-cuti/action') ?>" class="modal-content">
                         <?= csrf_field() ?>
                         <input type="hidden" name="leave_id" value="<?= e($r['id']) ?>">
                         <input type="hidden" name="aksi" value="<?= $aksi ?>">

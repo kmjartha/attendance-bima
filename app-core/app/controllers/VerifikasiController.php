@@ -31,24 +31,34 @@ class VerifikasiController extends Controller
         ]);
     }
 
-    /** POST /verifikasi-cuti/{id}/action */
+    /** POST /verifikasi-cuti/action or /verifikasi-cuti/{id}/action */
     public function action(string $id = ''): string
     {
         if (!has_role('HRD','Supervisor','Kepsek')) return $this->forbid();
 
         $model   = new LeaveRequest();
         $userM   = new User();
-        $targetId = (int)($_POST['leave_id'] ?? 0);
-        if ($targetId <= 0 && !empty($id)) {
-            $targetId = (int)$id;
+        $targetId = 0;
+        $postLeaveId = $_POST['leave_id'] ?? $_REQUEST['leave_id'] ?? null;
+        if ($postLeaveId === null) {
+            $rawBody = file_get_contents('php://input');
+            if ($rawBody) {
+                parse_str($rawBody, $parsedBody);
+                $postLeaveId = $parsedBody['leave_id'] ?? null;
+            }
         }
-        if ($targetId <= 0 && !empty($_SERVER['REQUEST_URI'])) {
+        if ($postLeaveId !== null) {
+            $targetId = (int)$postLeaveId;
+        } elseif (!empty($id)) {
+            $targetId = (int)$id;
+        } elseif (!empty($_SERVER['REQUEST_URI'])) {
             if (preg_match('#/verifikasi-cuti/(\d+)/action#', $_SERVER['REQUEST_URI'], $matches)) {
                 $targetId = (int)$matches[1];
             }
         }
         if ($targetId <= 0) {
-            file_put_contents(APP_PATH . '/verif-debug.txt', "BAD_TARGET_ID\nREQUEST_URI=" . ($_SERVER['REQUEST_URI'] ?? '') . "\nPOST=" . json_encode($_POST) . "\n\n", FILE_APPEND);
+            $rawBody = file_get_contents('php://input');
+            file_put_contents(APP_PATH . '/verif-debug.txt', "BAD_TARGET_ID\nREQUEST_URI=" . ($_SERVER['REQUEST_URI'] ?? '') . "\nPOST=" . json_encode($_POST) . "\nREQUEST=" . json_encode($_REQUEST) . "\nBODY=" . $rawBody . "\n\n", FILE_APPEND);
             $this->flash('error', 'Pengajuan tidak ditemukan.');
             return $this->redirect('/verifikasi-cuti');
         }
