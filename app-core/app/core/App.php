@@ -26,6 +26,14 @@ class App
         }
         $uri = '/' . ltrim($uri, '/');
 
+        if ($method === 'POST' && preg_match('#^/verifikasi-cuti(/action|/\d+/action)?$#', $uri)) {
+            $rawBody = file_get_contents('php://input');
+            @file_put_contents(APP_PATH . '/verif-request-log.txt',
+                "REQUEST_LOG\nURI={$uri}\nMETHOD={$method}\nREQUEST_URI=" . ($_SERVER['REQUEST_URI'] ?? '') . "\nPOST=" . json_encode($_POST) . "\nREQUEST=" . json_encode($_REQUEST) . "\nBODY=" . $rawBody . "\nHEADERS=" . json_encode(getallheaders() ?: []) . "\n\n",
+                FILE_APPEND
+            );
+        }
+
         try {
             $router->dispatch($method, $uri);
         } catch (\Throwable $e) {
