@@ -11,6 +11,7 @@ use App\Models\Shift;
 use App\Models\Announcement;
 use App\Models\RolePolicy;
 use App\Models\Holiday;
+use App\Models\LeaveRequest;
 
 class AbsensiController extends Controller
 {
@@ -63,10 +64,18 @@ class AbsensiController extends Controller
                 }
             }
             $holiday = (new Holiday())->findBy('tanggal', $tanggalCek);
+            $approvedLeave = (new LeaveRequest())->approvedForDate((int)$u['id'], $tanggalCek);
             if ($holiday) {
                 return $this->render('absensi.libur', [
                     'title'   => 'Hari Libur',
                     'holiday' => $holiday,
+                ], $layout);
+            }
+            if ($approvedLeave) {
+                return $this->render('absensi.libur', [
+                    'title'   => 'Cuti / Sakit Disetujui',
+                    'holiday' => null,
+                    'leave'   => $approvedLeave,
                 ], $layout);
             }
         }
@@ -169,6 +178,27 @@ class AbsensiController extends Controller
         $shift   = $shiftId ? (new Shift())->find($shiftId) : null;
 
         $now = current_time();
+        $tanggalAbsen = date('Y-m-d');
+        if ($shift) {
+            $shiftMasukTime  = strtotime($shift['jam_masuk']);
+            $shiftKeluarTime = strtotime($shift['jam_keluar']);
+            $isOvernight     = $shiftKeluarTime <= $shiftMasukTime;
+            if ($isOvernight && strtotime(date('H:i:s')) < $shiftKeluarTime) {
+                $tanggalAbsen = date('Y-m-d', strtotime('-1 day'));
+            }
+        }
+        $approvedLeave = (new LeaveRequest())->approvedForDate((int)$me['id'], $tanggalAbsen);
+        if ($approvedLeave) {
+            $jenis = $approvedLeave['jenis'] === 'sakit' ? 'sakit' : 'cuti';
+            $range = format_date_id($approvedLeave['tanggal_mulai']);
+            if ($approvedLeave['tanggal_mulai'] !== $approvedLeave['tanggal_selesai']) {
+                $range .= ' — ' . format_date_id($approvedLeave['tanggal_selesai']);
+            }
+            return $this->json([
+                'success' => false,
+                'message' => 'Anda sedang dalam ' . $jenis . ' yang sudah disetujui pada rentang ' . $range . '. Absensi tidak dapat dilakukan pada tanggal tersebut.',
+            ]);
+        }
 
         if ($type === 'masuk') {
             if ($today && $today['jam_masuk']) {
@@ -184,16 +214,6 @@ class AbsensiController extends Controller
             // bawah ini pakai tanggal kalender hari ini (bukan tanggal shift
             // yang benar), bisa salah menolak/menerima absen tepat di seputar
             // tengah malam.
-            $tanggalAbsen = date('Y-m-d');
-            if ($shift) {
-                $shiftMasukTime  = strtotime($shift['jam_masuk']);
-                $shiftKeluarTime = strtotime($shift['jam_keluar']);
-                $isOvernight     = $shiftKeluarTime <= $shiftMasukTime;
-                if ($isOvernight && strtotime(date('H:i:s')) < $shiftKeluarTime) {
-                    $tanggalAbsen = date('Y-m-d', strtotime('-1 day'));
-                }
-            }
-
             // Hanya hari libur yang diatur di aplikasi yang memblokir absen masuk.
             $rolePolicyOffDay = (new RolePolicy())->forRole((int)$me['role_id']);
             $holidayToday = (new Holiday())->findBy('tanggal', $tanggalAbsen);

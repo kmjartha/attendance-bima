@@ -13,7 +13,11 @@
     <div style="font-size:3.5rem;line-height:1">🌴</div>
     <h3 class="mt-3 mb-1">Selamat Liburan!</h3>
     <p class="text-muted-soft mb-3">
-      <?php if ($holiday): ?>
+      <?php if (!empty($leave)): ?>
+        Anda sedang dalam <strong><?= e($leave['jenis'] === 'sakit' ? 'sakit' : 'cuti') ?></strong> yang sudah disetujui.
+        Rentang: <strong><?= e(format_date_id($leave['tanggal_mulai'])) ?><?= $leave['tanggal_mulai'] !== $leave['tanggal_selesai'] ? ' — ' . e(format_date_id($leave['tanggal_selesai'])) : '' ?></strong>.
+        Absensi untuk tanggal ini tidak dapat dilakukan.
+      <?php elseif ($holiday): ?>
         Hari ini libur — <strong><?= e($holiday['keterangan']) ?></strong>. Anda tidak perlu dan tidak bisa absen hari ini.
       <?php else: ?>
         Hari ini bukan hari kerja efektif Anda. Anda tidak perlu dan tidak bisa absen hari ini.

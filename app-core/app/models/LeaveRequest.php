@@ -8,6 +8,32 @@ class LeaveRequest extends Model
 {
     protected string $table = 'leave_requests';
 
+    public static function isDateWithinLeavePeriod(string $date, array $leave): bool
+    {
+        $start = strtotime($leave['tanggal_mulai'] ?? '');
+        $end   = strtotime($leave['tanggal_selesai'] ?? '');
+        $target = strtotime($date);
+
+        if ($start === false || $end === false || $target === false || $start > $end) {
+            return false;
+        }
+
+        return $target >= $start && $target <= $end;
+    }
+
+    public function approvedForDate(int $userId, string $date): ?array
+    {
+        $stmt = $this->db()->prepare(
+            "SELECT * FROM {$this->table}
+             WHERE user_id = ? AND status = 'approved'
+               AND ? BETWEEN tanggal_mulai AND tanggal_selesai
+             ORDER BY id DESC LIMIT 1"
+        );
+        $stmt->execute([$userId, $date]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function pendingCount(): int
     {
         return $this->count("status = 'pending'");
