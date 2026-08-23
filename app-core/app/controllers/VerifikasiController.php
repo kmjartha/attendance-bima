@@ -95,9 +95,13 @@ class VerifikasiController extends Controller
 
         $newStatus = $aksi === 'approve' ? 'approved' : 'rejected';
 
-        // Jika approve & jenis non-sakit → kurangi jumlah_cuti user (selisih hari +1)
+        // Jika approve & jenis non-sakit → kurangi jumlah_cuti user sesuai
+        // JUMLAH TANGGAL YANG BENAR-BENAR DIPILIH (bukan rentang
+        // tanggal_mulai..tanggal_selesai, krn satu pengajuan bisa mencakup
+        // tanggal yg tidak berurutan).
+        $dates = array_column($model->datesFor($targetId), 'tanggal');
         if ($newStatus === 'approved' && $req['status'] !== 'approved' && $req['jenis'] !== 'sakit') {
-            $days = max(1, (int)((strtotime($req['tanggal_selesai']) - strtotime($req['tanggal_mulai']))/86400) + 1);
+            $days = max(1, count($dates));
             $sisa = max(0, (int)$req['user_jumlah_cuti'] - $days);
             $userM->update((int)$req['user_id'], ['jumlah_cuti' => $sisa]);
         }
@@ -111,7 +115,7 @@ class VerifikasiController extends Controller
         // Tulis baris izin/sakit ke tabel attendances supaya kolom "Izin"/
         // "Sakit" di laporan benar-benar terisi (lihat Attendance::syncFromApprovedLeave).
         if ($newStatus === 'approved') {
-            (new Attendance())->syncFromApprovedLeave($req);
+            (new Attendance())->syncFromApprovedLeave($req, $dates);
         }
 
         $this->flash('success', 'Pengajuan ' . ($aksi==='approve'?'disetujui':'ditolak') . '.');

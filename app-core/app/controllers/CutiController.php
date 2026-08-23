@@ -8,6 +8,7 @@ use App\Core\App;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\User;
+use App\Models\Holiday;
 
 class CutiController extends Controller
 {
@@ -45,10 +46,14 @@ class CutiController extends Controller
         if ($resp = $this->forbidSupervisorSubmit()) return $resp;
         $u  = user();
         $me = (new User())->find((int)$u['id']);
+        $blocked  = (new LeaveRequest())->existingDatesForUser((int)$u['id']);
+        $holidays = array_column((new Holiday())->allOrdered(), 'tanggal');
         $layout = is_pegawai() ? 'mobile' : 'app';
         return $this->render('cuti.create', [
-            'title' => 'Ajukan Cuti / Sakit',
-            'me'    => $me,
+            'title'        => 'Ajukan Cuti / Sakit',
+            'me'           => $me,
+            'blockedDates' => $blocked,
+            'holidayDates' => $holidays,
         ], $layout);
     }
 
@@ -56,23 +61,42 @@ class CutiController extends Controller
     public function store(): string
     {
         if ($resp = $this->forbidSupervisorSubmit()) return $resp;
+        $userId = (int)user()['id'];
         $jenis  = $_POST['jenis'] ?? '';
-        $start  = $_POST['tanggal_mulai'] ?? '';
-        $end    = $_POST['tanggal_selesai'] ?? '';
         $alasan = trim((string)($_POST['alasan'] ?? ''));
 
+        $rawDates = $_POST['tanggal'] ?? [];
+        $dates = [];
+        if (is_array($rawDates)) {
+            foreach (array_unique($rawDates) as $d) {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d)) {
+                    $dates[] = $d;
+                }
+            }
+        }
+        sort($dates);
+
+        $notes = $this->parseDateNotes($_POST['catatan_tanggal'] ?? []);
+
         $v = Validator::make($_POST, [
-            'jenis'           => 'required',
-            'tanggal_mulai'   => 'required',
-            'tanggal_selesai' => 'required',
-            'alasan'          => 'required|min:5|max:1000',
+            'jenis'  => 'required',
+            'alasan' => 'required|min:5|max:1000',
         ]);
+        if (empty($dates)) {
+            $v->addError('tanggal', 'Pilih minimal satu tanggal di kalender.');
+        }
         if (!in_array($jenis, ['sakit','tahunan','melahirkan','menikah'], true)) {
             $v->addError('jenis', 'Jenis cuti tidak valid.');
         }
-        if ($start && $end && strtotime($end) < strtotime($start)) {
-            $v->addError('tanggal_selesai', 'Tanggal selesai harus ≥ tanggal mulai.');
+
+        // Jangan sampai tanggal yg dipilih tabrakan dgn cuti lain yg masih
+        // pending/approved milik karyawan yg sama (cegah duplikat tanggal).
+        $blocked = (new LeaveRequest())->existingDatesForUser($userId);
+        $clash = array_values(array_intersect($dates, array_keys($blocked)));
+        if (!empty($clash)) {
+            $v->addError('tanggal', 'Tanggal ' . implode(', ', $clash) . ' sudah dipakai cuti lain.');
         }
+
         if ($v->fails()) {
             $_SESSION['_old']    = $_POST;
             $_SESSION['_errors'] = $v->errors();
@@ -94,19 +118,177 @@ class CutiController extends Controller
             return $this->redirect('/cuti/create');
         }
 
-        (new LeaveRequest())->create([
-            'user_id'         => user()['id'],
-            'jenis'           => $jenis,
-            'tanggal_mulai'   => $start,
-            'tanggal_selesai' => $end,
-            'alasan'          => $alasan,
-            'file_surat'      => $filePath,
-            'status'          => 'pending',
-        ]);
+        // SATU pengajuan = SATU baris leave_requests, walau tanggalnya
+        // tidak berurutan — tanggal individualnya (+ catatan per-tanggal
+        // kalau diisi) disimpan di leave_request_dates.
+        $dateMap = [];
+        foreach ($dates as $d) {
+            $dateMap[$d] = $notes[$d] ?? null;
+        }
+
+        (new LeaveRequest())->createWithDates([
+            'user_id'    => $userId,
+            'jenis'      => $jenis,
+            'alasan'     => $alasan,
+            'file_surat' => $filePath,
+            'status'     => 'pending',
+        ], $dateMap);
 
         unset($_SESSION['_old'], $_SESSION['_errors']);
         $this->flash('success', 'Pengajuan cuti berhasil dikirim. Menunggu verifikasi.');
         return $this->redirect('/cuti');
+    }
+
+    /** GET /cuti/{id}/edit — HRD ubah tanggal/jenis cuti yg sudah ada (utk perbaiki kesalahan input) */
+    public function editForm(string $id): string
+    {
+        $leaveModel = new LeaveRequest();
+        $row = $leaveModel->findWithUser((int)$id);
+        if (!$row) {
+            $this->flash('error', 'Data cuti tidak ditemukan.');
+            return $this->redirect('/verifikasi-cuti');
+        }
+
+        $existingRows  = $leaveModel->datesFor((int)$id);
+        $existingDates = array_column($existingRows, 'tanggal');
+        $existingNotes = [];
+        foreach ($existingRows as $r) {
+            if (!empty($r['keterangan'])) $existingNotes[$r['tanggal']] = $r['keterangan'];
+        }
+
+        $holidays = array_column((new Holiday())->allOrdered(), 'tanggal');
+        $blocked  = $leaveModel->existingDatesForUser((int)$row['user_id'], (int)$id);
+
+        return $this->render('cuti.edit', [
+            'title'         => 'Ubah Cuti',
+            'row'           => $row,
+            'existingDates' => $existingDates,
+            'existingNotes' => $existingNotes,
+            'holidayDates'  => $holidays,
+            'blockedDates'  => $blocked,
+        ]);
+    }
+
+    /** POST /cuti/{id}/edit */
+    public function update(string $id): string
+    {
+        $leaveModel = new LeaveRequest();
+        $userModel  = new User();
+        $attModel   = new Attendance();
+
+        $old = $leaveModel->findWithUser((int)$id);
+        if (!$old) {
+            $this->flash('error', 'Data cuti tidak ditemukan.');
+            return $this->redirect('/verifikasi-cuti');
+        }
+
+        // Karyawan dikunci — edit ini utk pindah TANGGAL/JENIS, bukan
+        // memindahkan cuti ke karyawan lain.
+        $userId = (int)$old['user_id'];
+        $jenis  = $_POST['jenis'] ?? '';
+        $alasan = trim((string)($_POST['alasan'] ?? ''));
+
+        $rawDates = $_POST['tanggal'] ?? [];
+        $dates = [];
+        if (is_array($rawDates)) {
+            foreach (array_unique($rawDates) as $d) {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d)) {
+                    $dates[] = $d;
+                }
+            }
+        }
+        sort($dates);
+
+        $notes = $this->parseDateNotes($_POST['catatan_tanggal'] ?? []);
+
+        $v = Validator::make($_POST, [
+            'jenis'  => 'required',
+            'alasan' => 'max:1000',
+        ]);
+        if (empty($dates)) {
+            $v->addError('tanggal', 'Pilih minimal satu tanggal di kalender.');
+        }
+        if (!in_array($jenis, ['sakit','tahunan','melahirkan','menikah','darurat'], true)) {
+            $v->addError('jenis', 'Jenis cuti tidak valid.');
+        }
+
+        // Cegah tanggal hasil edit tabrakan dgn cuti LAIN milik karyawan yg
+        // sama (baris yg sedang diedit sendiri dikecualikan).
+        $blocked = $leaveModel->existingDatesForUser($userId, (int)$id);
+        $clash = array_values(array_intersect($dates, array_keys($blocked)));
+        if (!empty($clash)) {
+            $v->addError('tanggal', 'Tanggal ' . implode(', ', $clash) . ' sudah dipakai cuti lain milik karyawan ini.');
+        }
+
+        if ($v->fails()) {
+            $_SESSION['_old']    = $_POST;
+            $_SESSION['_errors'] = $v->errors();
+            $this->flash('error', 'Periksa kembali isian Anda.');
+            return $this->redirect('/cuti/' . $id . '/edit');
+        }
+
+        // Kalau data lama berstatus approved, balikkan dulu efeknya (kuota
+        // + baris attendance) SEBELUM menulis yg baru — pakai tanggal LAMA
+        // yg SEBENARNYA dipilih (leave_request_dates), bukan rentang
+        // tanggal_mulai..tanggal_selesai (bisa salah kalau tanggalnya dulu
+        // tidak berurutan).
+        $oldDates = array_column($leaveModel->datesFor((int)$id), 'tanggal');
+        if ($old['status'] === 'approved') {
+            if ($old['jenis'] !== 'sakit') {
+                $oldDays = max(1, count($oldDates));
+                $user = $userModel->find($userId);
+                if ($user) {
+                    $userModel->update($userId, ['jumlah_cuti' => max(0, (int)$user['jumlah_cuti'] + $oldDays)]);
+                }
+            }
+            $attModel->deleteLeaveRowsForApprovedLeave($old, $oldDates);
+        }
+
+        // File baru opsional — kalau tidak diupload ulang, file lama tetap dipakai.
+        $filePath = $old['file_surat'] ?? null;
+        if (!empty($_FILES['file_surat']['name'])) {
+            $newFile = $this->saveDocument($_FILES['file_surat']);
+            if (!$newFile) {
+                $this->flash('error', 'File surat tidak valid (PDF/JPG/PNG max 5 MB).');
+                return $this->redirect('/cuti/' . $id . '/edit');
+            }
+            if ($filePath) {
+                $oldFull = PUBLIC_PATH . '/uploads/' . $filePath;
+                if (is_file($oldFull)) @unlink($oldFull);
+            }
+            $filePath = $newFile;
+        }
+
+        $catatan = trim(($old['catatan'] ? $old['catatan'] . ' ' : '') . '(diubah oleh ' . (user()['nama'] ?? 'HRD') . ')');
+
+        // SATU baris TETAP SATU baris — tanggal-tanggalnya diganti
+        // seluruhnya (bisa nambah/kurang/pindah), tidak pernah dipecah
+        // jadi baris leave_requests baru walau hasilnya tidak berurutan.
+        $dateMap = [];
+        foreach ($dates as $d) {
+            $dateMap[$d] = $notes[$d] ?? null;
+        }
+        $leaveModel->updateWithDates((int)$id, [
+            'jenis'      => $jenis,
+            'alasan'     => $alasan !== '' ? $alasan : '(tidak ada keterangan)',
+            'file_surat' => $filePath,
+            'catatan'    => $catatan,
+        ], $dateMap);
+
+        if ($old['status'] === 'approved') {
+            $updated = $leaveModel->find((int)$id);
+            $attModel->syncFromApprovedLeave($updated, $dates);
+
+            if ($jenis !== 'sakit') {
+                $user = $userModel->find($userId);
+                $sisa = max(0, (int)$user['jumlah_cuti'] - count($dates));
+                $userModel->update($userId, ['jumlah_cuti' => $sisa]);
+            }
+        }
+
+        unset($_SESSION['_old'], $_SESSION['_errors']);
+        $this->flash('success', 'Cuti berhasil diubah.');
+        return $this->redirect('/verifikasi-cuti');
     }
 
     public function destroy(string $id): string
@@ -140,8 +322,9 @@ class CutiController extends Controller
         }
 
         if ($row['status'] === 'approved') {
+            $dates = array_column($model->datesFor((int)$id), 'tanggal');
             if ($row['jenis'] !== 'sakit') {
-                $days = max(1, (int)((strtotime($row['tanggal_selesai']) - strtotime($row['tanggal_mulai'])) / 86400) + 1);
+                $days = max(1, count($dates));
                 $userModel = new User();
                 $user = $userModel->find((int)$row['user_id']);
                 if ($user) {
@@ -151,7 +334,7 @@ class CutiController extends Controller
                 }
             }
 
-            (new Attendance())->deleteLeaveRowsForApprovedLeave($row);
+            (new Attendance())->deleteLeaveRowsForApprovedLeave($row, $dates);
         }
 
         if (!empty($row['file_surat'])) {
@@ -161,9 +344,24 @@ class CutiController extends Controller
             }
         }
 
-        $model->delete((int)$id);
+        $model->delete((int)$id); // leave_request_dates ikut terhapus via ON DELETE CASCADE
         $this->flash('success', 'Pengajuan cuti berhasil dihapus.');
         return $this->redirect($redirect);
+    }
+
+    /** Ubah $_POST['catatan_tanggal'] (assoc: tanggal => teks) jadi array bersih, trim + potong 255 char. */
+    private function parseDateNotes($raw): array
+    {
+        $notes = [];
+        if (is_array($raw)) {
+            foreach ($raw as $d => $n) {
+                $n = trim((string)$n);
+                if ($n !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                    $notes[$d] = mb_substr($n, 0, 255);
+                }
+            }
+        }
+        return $notes;
     }
 
     private function saveDocument(array $file): ?string

@@ -19,11 +19,11 @@
 <?php else: ?>
   <div class="card-soft p-0">
     <?php foreach ($rows as $r):
-      $jenisColor = ['sakit'=>'danger','tahunan'=>'primary','melahirkan'=>'info','menikah'=>'warning'][$r['jenis']] ?? 'secondary';
+      $jenisColor = ['sakit'=>'danger','tahunan'=>'primary','melahirkan'=>'info','menikah'=>'warning','darurat'=>'dark'][$r['jenis']] ?? 'secondary';
     ?>
       <div class="cuti-row">
         <div class="c-icon bg-<?= $jenisColor ?>-subtle text-<?= $jenisColor ?>">
-          <i class="bi bi-<?= $r['jenis']==='sakit'?'bandaid-fill':($r['jenis']==='melahirkan'?'heart-fill':($r['jenis']==='menikah'?'gift-fill':'calendar-event-fill')) ?>"></i>
+          <i class="bi bi-<?= $r['jenis']==='sakit'?'bandaid-fill':($r['jenis']==='melahirkan'?'heart-fill':($r['jenis']==='menikah'?'gift-fill':($r['jenis']==='darurat'?'exclamation-triangle-fill':'calendar-event-fill'))) ?>"></i>
         </div>
         <div class="c-body">
           <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -31,7 +31,7 @@
             <?= status_badge($r['status']) ?>
           </div>
           <div class="text-muted-soft" style="font-size:.82rem">
-            <?= e(format_date_id($r['tanggal_mulai'])) ?> — <?= e(format_date_id($r['tanggal_selesai'])) ?>
+            <?= format_leave_dates($r['tanggal_list'] ?? null, $r['tanggal_mulai'], $r['tanggal_selesai']) ?>
           </div>
           <div class="mt-1" style="font-size:.85rem"><?= e($r['alasan']) ?></div>
           <?php if ($r['file_surat']): ?>

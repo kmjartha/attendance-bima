@@ -28,30 +28,38 @@
 </style>
 
 <div class="page-head mb-3">
-  <h2 class="mb-1">Ajukan Cuti / Sakit</h2>
-  <div class="text-muted-soft">Sisa jatah cuti tahunan: <strong><?= (int)($me['jumlah_cuti'] ?? 0) ?> hari</strong></div>
+  <h2 class="mb-1">Ubah Cuti</h2>
 </div>
 
 <div class="alert alert-info d-flex gap-2 align-items-start" role="alert" style="max-width:680px">
   <i class="bi bi-info-circle-fill mt-1"></i>
   <div>
-    Klik tanggal di kalender di bawah utk memilih — boleh tidak berurutan.
-    Tanggal yang sudah ada pengajuan cuti lain (menunggu atau sudah disetujui) akan otomatis terkunci agar tidak dobel.
+    Mengubah cuti <strong><?= e($row['user_nama']) ?></strong> (<?= e($row['user_role']) ?>).
+    Klik tanggal di kalender utk menambah/mengurangi — boleh tidak berurutan.
+    <?php if ($row['status'] === 'approved'): ?>
+      Cuti ini sudah <strong>disetujui</strong>; menyimpan perubahan akan otomatis memperbarui data absensi &amp; sisa jatah cuti sesuai tanggal yang baru.
+    <?php else: ?>
+      Status saat ini <strong><?= e(ucfirst($row['status'])) ?></strong> dan akan tetap sama setelah diubah.
+    <?php endif; ?>
     <div class="mt-2 fw-semibold" id="cal-selected-info">&nbsp;</div>
   </div>
 </div>
 
-<form method="post" enctype="multipart/form-data" class="card-soft" style="max-width:680px" id="form-cuti-create">
+<form method="post" enctype="multipart/form-data" class="card-soft" style="max-width:680px" id="form-cuti-edit">
   <?= csrf_field() ?>
+
+  <label class="form-label fw-semibold">Karyawan</label>
+  <div class="form-control mb-3 bg-light" style="cursor:not-allowed">
+    <?= e($row['user_nama']) ?> — <?= e($row['user_role']) ?>
+    <span class="text-muted-soft" style="font-size:.78rem">(tidak bisa diubah di sini)</span>
+  </div>
 
   <label class="form-label fw-semibold">Jenis Cuti</label>
   <select name="jenis" class="form-select mb-3 <?= isset($errors['jenis'])?'is-invalid':'' ?>" required>
-    <option value="">— Pilih —</option>
-    <?php foreach (['tahunan'=>'Cuti Tahunan','sakit'=>'Sakit','melahirkan'=>'Melahirkan','menikah'=>'Menikah'] as $k=>$v): ?>
-      <option value="<?= $k ?>" <?= old('jenis')===$k?'selected':'' ?>><?= $v ?></option>
+    <?php foreach (['darurat'=>'Mendadak / Force Majeure','tahunan'=>'Cuti Tahunan','sakit'=>'Sakit','melahirkan'=>'Melahirkan','menikah'=>'Menikah'] as $k=>$v): ?>
+      <option value="<?= $k ?>" <?= (old('jenis', $row['jenis'])===$k)?'selected':'' ?>><?= $v ?></option>
     <?php endforeach; ?>
   </select>
-  <?php if(isset($errors['jenis'])): ?><div class="invalid-feedback d-block mb-3"><?= e($errors['jenis']) ?></div><?php endif; ?>
 
   <label class="form-label fw-semibold">Tanggal Cuti</label>
   <div class="cuti-cal">
@@ -67,22 +75,28 @@
       <span><i class="cuti-cal-dot is-blocked"></i> Sudah dipakai cuti lain</span>
     </div>
   </div>
-  <div id="cal-hidden-inputs"><?php foreach ((array)old('tanggal', []) as $d): ?><input type="hidden" name="tanggal[]" value="<?= e($d) ?>"><?php endforeach; ?></div>
+  <div id="cal-hidden-inputs"><?php foreach ((array)old('tanggal', $existingDates) as $d): ?><input type="hidden" name="tanggal[]" value="<?= e($d) ?>"><?php endforeach; ?></div>
   <div class="invalid-feedback d-block mt-2 mb-2 <?= isset($errors['tanggal'])?'':'d-none' ?>" id="cal-error"><?= e($errors['tanggal'] ?? 'Pilih tanggal cuti terlebih dahulu di kalender.') ?></div>
   <button type="button" class="btn btn-sm btn-outline-secondary my-2" id="cal-clear">Hapus Pilihan</button>
 
   <div id="cal-date-notes" class="mb-1"></div>
 
-  <label class="form-label fw-semibold">Alasan <span class="text-muted-soft">(umum, berlaku utk semua tanggal di atas)</span></label>
-  <textarea name="alasan" rows="3" class="form-control mb-3 <?= isset($errors['alasan'])?'is-invalid':'' ?>" maxlength="1000" required placeholder="Jelaskan alasan pengajuan cuti…"><?= e(old('alasan')) ?></textarea>
-  <?php if(isset($errors['alasan'])): ?><div class="invalid-feedback d-block mb-3"><?= e($errors['alasan']) ?></div><?php endif; ?>
+  <label class="form-label fw-semibold">Keterangan <span class="text-muted-soft">(umum, opsional)</span></label>
+  <textarea name="alasan" rows="3" class="form-control mb-3 <?= isset($errors['alasan'])?'is-invalid':'' ?>" maxlength="1000" placeholder="Boleh dikosongkan."><?= e(old('alasan', $row['alasan'] === '(tidak ada keterangan)' ? '' : $row['alasan'])) ?></textarea>
 
-  <label class="form-label fw-semibold">Surat / Lampiran <span class="text-muted-soft">(wajib utk cuti Sakit)</span></label>
+  <label class="form-label fw-semibold">Surat / Lampiran <span class="text-muted-soft">(opsional)</span></label>
+  <?php if (!empty($row['file_surat'])): ?>
+    <div class="mb-2" style="font-size:.85rem">
+      <i class="bi bi-paperclip"></i> Lampiran saat ini:
+      <a href="<?= e(upload_url($row['file_surat'])) ?>" target="_blank">lihat file</a>
+    </div>
+  <?php endif; ?>
   <input type="file" name="file_surat" class="form-control mb-3" accept="application/pdf,image/jpeg,image/png">
+  <div class="text-muted-soft mb-3" style="font-size:.78rem">Kosongkan kalau tidak ingin mengganti lampiran yang sudah ada.</div>
 
   <div class="d-flex gap-2 justify-content-end">
-    <a href="<?= url('/cuti') ?>" class="btn btn-light">Batal</a>
-    <button class="btn btn-primary"><i class="bi bi-send"></i> Ajukan</button>
+    <a href="<?= url('/verifikasi-cuti') ?>" class="btn btn-light">Batal</a>
+    <button class="btn btn-primary"><i class="bi bi-save2"></i> Simpan Perubahan</button>
   </div>
 </form>
 
@@ -90,7 +104,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const holidays = <?= json_encode($holidayDates ?? []) ?>;
   const blocked  = <?= json_encode($blockedDates ?? []) ?>; // { 'YYYY-MM-DD': { jenis, status, note } }
-  const initialSelected = <?= json_encode(array_values((array)old('tanggal', []))) ?>;
+  const initialSelected = <?= json_encode(array_values((array)old('tanggal', $existingDates))) ?>;
 
   const grid      = document.getElementById('cal-grid');
   const title     = document.getElementById('cal-title');
@@ -98,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const errBox    = document.getElementById('cal-error');
   const hiddenBox = document.getElementById('cal-hidden-inputs');
   const notesBox  = document.getElementById('cal-date-notes');
-  const form      = document.getElementById('form-cuti-create');
+  const form      = document.getElementById('form-cuti-edit');
 
   const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   const dowNames   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
@@ -106,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const today = new Date();
   const selected = new Set(initialSelected);
-  const dateNotes = <?= json_encode((array)old('catatan_tanggal', [])) ?>; // date -> teks, diisi user per tanggal
+  const dateNotes = <?= json_encode((array)old('catatan_tanggal', $existingNotes ?? [])) ?>; // date -> teks per tanggal
 
   let viewYear, viewMonth;
   if (selected.size) {
@@ -217,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hint = document.createElement('div');
     hint.className = 'text-muted-soft mb-2';
     hint.style.fontSize = '.78rem';
-    hint.textContent = 'Kosongkan kalau alasannya sama semua — pakai kolom Alasan di bawah saja.';
+    hint.textContent = 'Kosongkan kalau alasannya sama semua — pakai kolom Keterangan umum di bawah saja.';
     notesBox.appendChild(hint);
 
     const opt = { weekday: 'short', day: 'numeric', month: 'long' };

@@ -42,8 +42,7 @@
             </td>
             <td><span class="badge bg-light text-dark text-capitalize"><?= e($r['jenis']) ?></span></td>
             <td>
-              <?= e(format_date_id($r['tanggal_mulai'])) ?><br>
-              <span class="text-muted-soft" style="font-size:.78rem">s/d <?= e(format_date_id($r['tanggal_selesai'])) ?></span>
+              <?= format_leave_dates($r['tanggal_list'], $r['tanggal_mulai'], $r['tanggal_selesai']) ?>
             </td>
             <td style="max-width:280px"><?= e($r['alasan']) ?>
               <?php if ($r['file_surat']): ?>
@@ -59,13 +58,33 @@
               <?php endif; ?>
             </td>
             <td class="text-end">
+              <div class="d-flex flex-wrap gap-1 justify-content-end align-items-center">
+                <?php if ($r['status'] === 'pending'): ?>
+                  <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#mApprove<?= $r['id'] ?>">
+                    <i class="bi bi-check-lg"></i> Setujui
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#mReject<?= $r['id'] ?>">
+                    <i class="bi bi-x-lg"></i> Tolak
+                  </button>
+                <?php else: ?>
+                  <span class="text-muted-soft" style="font-size:.78rem">
+                    <?= $r['verifier_nama'] ? 'oleh '.e($r['verifier_nama']) : '' ?>
+                  </span>
+                <?php endif; ?>
+                <?php if (has_role('HRD')): ?>
+                  <a href="<?= url('/cuti/'.$r['id'].'/edit') ?>" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil-square"></i> Ubah
+                  </a>
+                  <form method="post" action="<?= url('/cuti/'.$r['id'].'/delete') ?>" class="d-inline-block">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="redirect_to" value="<?= e('/verifikasi-cuti' . ($status ? '?status=' . urlencode($status) : '')) ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      <i class="bi bi-trash3"></i> Hapus
+                    </button>
+                  </form>
+                <?php endif; ?>
+              </div>
               <?php if ($r['status'] === 'pending'): ?>
-                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#mApprove<?= $r['id'] ?>">
-                  <i class="bi bi-check-lg"></i> Setujui
-                </button>
-                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#mReject<?= $r['id'] ?>">
-                  <i class="bi bi-x-lg"></i> Tolak
-                </button>
                 <?php foreach (['approve'=>['success','Setujui Pengajuan'],'reject'=>['danger','Tolak Pengajuan']] as $aksi=>$meta): ?>
                   <div class="modal fade" id="m<?= ucfirst($aksi) ?><?= $r['id'] ?>" tabindex="-1">
                     <div class="modal-dialog">
@@ -87,17 +106,6 @@
                     </div>
                   </div>
                 <?php endforeach; ?>
-              <?php else: ?>
-                <span class="text-muted-soft" style="font-size:.78rem">
-                  <?= $r['verifier_nama'] ? 'oleh '.e($r['verifier_nama']) : '' ?>
-                </span>
-              <?php endif; ?>
-              <?php if (has_role('HRD')): ?>
-                <form method="post" action="<?= url('/cuti/'.$r['id'].'/delete') ?>" class="d-inline-block mt-2">
-                  <?= csrf_field() ?>
-                  <input type="hidden" name="redirect_to" value="<?= e('/verifikasi-cuti' . ($status ? '?status=' . urlencode($status) : '')) ?>">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
-                </form>
               <?php endif; ?>
             </td>
           </tr>

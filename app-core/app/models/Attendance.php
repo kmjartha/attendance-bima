@@ -19,6 +19,10 @@ class Attendance extends Model
      * baru, dan app/cron/backfill_leave_attendance.php utk cuti yang
      * SUDAH lama disetujui sebelum perbaikan ini ada.
      *
+     * $dates: daftar tanggal ('YYYY-MM-DD') yg dicakup pengajuan ini --
+     * BUKAN sekedar tanggal_mulai..tanggal_selesai, krn satu pengajuan
+     * sekarang bisa mencakup tanggal yg tidak berurutan (leave_request_dates).
+     *
      * Aturan: hanya menulis utk tanggal yang memang hari kerja efektif
      * karyawan tsb (skip weekend/libur yang tidak relevan). Kalau ada
      * baris attendances yang sudah ada, kami perbarui menjadi status cuti
@@ -28,7 +32,7 @@ class Attendance extends Model
      *
      * @return int jumlah baris yang ditulis/diperbarui
      */
-    public function syncFromApprovedLeave(array $leave): int
+    public function syncFromApprovedLeave(array $leave, array $dates): int
     {
         $userId = (int)$leave['user_id'];
         $status = $leave['jenis'] === 'sakit' ? 'sakit' : 'izin';
@@ -45,12 +49,7 @@ class Attendance extends Model
         $assignment = $userShiftModel->defaultAssignment($userId);
 
         $written = 0;
-        $cursor  = strtotime($leave['tanggal_mulai']);
-        $end     = strtotime($leave['tanggal_selesai']);
-        if ($cursor === false || $end === false || $cursor > $end) return 0;
-
-        while ($cursor <= $end) {
-            $date    = date('Y-m-d', $cursor);
+        foreach ($dates as $date) {
             $holiday = $holidayModel->findBy('tanggal', $date);
 
             if (!is_exempt_from_alpha($policy, $assignment, $date, $holiday)) {
@@ -69,21 +68,15 @@ class Attendance extends Model
                     $written++;
                 }
             }
-
-            $cursor = strtotime('+1 day', $cursor);
         }
 
         return $written;
     }
 
-    public function deleteLeaveRowsForApprovedLeave(array $leave): int
+    public function deleteLeaveRowsForApprovedLeave(array $leave, array $dates): int
     {
         $userId = (int)$leave['user_id'];
-        $cursor = strtotime($leave['tanggal_mulai']);
-        $end    = strtotime($leave['tanggal_selesai']);
-        if ($cursor === false || $end === false || $cursor > $end) {
-            return 0;
-        }
+        if (empty($dates)) return 0;
 
         $label = 'Cuti ' . ($leave['jenis'] === 'sakit' ? 'sakit' : $leave['jenis']) . ' disetujui';
         $stmt  = $this->db()->prepare(
@@ -92,10 +85,9 @@ class Attendance extends Model
         );
 
         $deleted = 0;
-        while ($cursor <= $end) {
-            $stmt->execute([$userId, date('Y-m-d', $cursor), $label]);
+        foreach ($dates as $date) {
+            $stmt->execute([$userId, $date, $label]);
             $deleted += $stmt->rowCount();
-            $cursor = strtotime('+1 day', $cursor);
         }
 
         return $deleted;
@@ -141,9 +133,9 @@ class Attendance extends Model
 
         $stmtExisting = $pdo->prepare("SELECT id FROM attendances WHERE user_id = ? AND tanggal = ? LIMIT 1");
         $stmtLeave    = $pdo->prepare(
-            "SELECT id FROM leave_requests
-             WHERE user_id = ? AND status = 'approved'
-               AND ? BETWEEN tanggal_mulai AND tanggal_selesai LIMIT 1"
+            "SELECT lr.id FROM leave_requests lr
+             JOIN leave_request_dates lrd ON lrd.leave_request_id = lr.id
+             WHERE lr.user_id = ? AND lr.status = 'approved' AND lrd.tanggal = ? LIMIT 1"
         );
 
         foreach ($users as $u) {

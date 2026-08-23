@@ -58,6 +58,7 @@ foreach (['auth', 'url', 'format', 'upload', 'face', 'policy'] as $helper) {
 
 use App\Core\Database;
 use App\Models\Attendance;
+use App\Models\LeaveRequest;
 
 date_default_timezone_set($config['timezone'] ?? 'Asia/Makassar');
 Database::init($db);
@@ -66,11 +67,22 @@ $pdo = Database::pdo();
 $rows = $pdo->query("SELECT * FROM leave_requests WHERE status = 'approved' ORDER BY id")->fetchAll();
 echo "Ditemukan " . count($rows) . " pengajuan cuti/sakit yang sudah disetujui.\n";
 
+$leaveModel = new LeaveRequest();
 $attModel = new Attendance();
 $totalWritten = 0;
 
 foreach ($rows as $leave) {
-    $written = $attModel->syncFromApprovedLeave($leave);
+    $dates = array_column($leaveModel->datesFor((int)$leave['id']), 'tanggal');
+    if (empty($dates)) {
+        // fallback utk data lama yg blm sempat di-backfill ke leave_request_dates
+        $cursor = strtotime($leave['tanggal_mulai']);
+        $end    = strtotime($leave['tanggal_selesai']);
+        while ($cursor !== false && $end !== false && $cursor <= $end) {
+            $dates[] = date('Y-m-d', $cursor);
+            $cursor = strtotime('+1 day', $cursor);
+        }
+    }
+    $written = $attModel->syncFromApprovedLeave($leave, $dates);
     if ($written > 0) {
         echo "  - Leave #{$leave['id']} (user_id={$leave['user_id']}, {$leave['jenis']}, {$leave['tanggal_mulai']} s/d {$leave['tanggal_selesai']}): {$written} baris ditulis/diperbaiki.\n";
     }

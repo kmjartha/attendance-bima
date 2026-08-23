@@ -135,3 +135,43 @@ if (!function_exists('day_name_id')) {
         return $hari[(int)date('w', strtotime($date))];
     }
 }
+
+if (!function_exists('format_leave_dates')) {
+    /**
+     * Format daftar tanggal cuti (dari GROUP_CONCAT leave_request_dates,
+     * dipisah koma) jadi teks ringkas. Satu pengajuan sekarang bisa
+     * mencakup tanggal yg tidak berurutan, jadi tidak selalu tampil
+     * sebagai satu rentang "A — B".
+     * @param string|null $csv  Tanggal dipisah koma, urut ASC (dari SQL)
+     * @param string|null $fallbackStart tanggal_mulai (dipakai kalau $csv kosong, data lama blm di-backfill)
+     * @param string|null $fallbackEnd   tanggal_selesai
+     */
+    function format_leave_dates(?string $csv, ?string $fallbackStart = null, ?string $fallbackEnd = null): string
+    {
+        $dates = $csv ? explode(',', $csv) : [];
+        if (empty($dates) && $fallbackStart) {
+            return format_date_id($fallbackStart) .
+                   ($fallbackEnd && $fallbackEnd !== $fallbackStart ? ' — ' . format_date_id($fallbackEnd) : '');
+        }
+        if (empty($dates)) return '-';
+
+        sort($dates);
+        $n = count($dates);
+
+        // Rentang berurutan (semua selisih 1 hari) -> tampil ringkas "A — B"
+        $isContiguous = true;
+        for ($i = 1; $i < $n; $i++) {
+            if (strtotime($dates[$i]) - strtotime($dates[$i-1]) !== 86400) { $isContiguous = false; break; }
+        }
+        if ($isContiguous && $n > 1) {
+            return format_date_id($dates[0]) . ' — ' . format_date_id(end($dates)) . " ({$n} hari)";
+        }
+        if ($n === 1) {
+            return format_date_id($dates[0]);
+        }
+        // Tidak berurutan -> daftar tanggal (tanpa tahun berulang biar ringkas)
+        $bulan = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        $parts = array_map(fn($d) => (int)date('j', strtotime($d)) . ' ' . $bulan[(int)date('n', strtotime($d))], $dates);
+        return implode(', ', $parts) . " ({$n} hari)";
+    }
+}
