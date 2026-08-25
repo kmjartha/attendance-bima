@@ -88,7 +88,7 @@
     </div>
   </div>
 
-  <form method="post" action="<?= url('/cuti/manual') ?>" enctype="multipart/form-data" class="card-soft" style="max-width:680px" id="form-cuti-manual">
+  <form method="post" action="<?= url('/cuti/manual') ?>" class="card-soft" style="max-width:680px" id="form-cuti-manual">
     <?= csrf_field() ?>
     <input type="hidden" name="user_id" value="<?= (int)$selectedUserId ?>">
 
@@ -122,9 +122,6 @@
 
     <label class="form-label fw-semibold">Keterangan <span class="text-muted-soft">(umum, opsional)</span></label>
     <textarea name="alasan" rows="3" class="form-control mb-3" maxlength="1000" placeholder="Contoh: Force majeure, keluarga sakit mendadak, dll. Boleh dikosongkan."><?= e(old('alasan')) ?></textarea>
-
-    <label class="form-label fw-semibold">Surat / Lampiran <span class="text-muted-soft">(opsional — boleh menyusul, PDF/JPG/PNG max 5 MB)</span></label>
-    <input type="file" name="file_surat" class="form-control mb-3" accept="application/pdf,image/jpeg,image/png">
 
     <div class="d-flex gap-2 justify-content-end">
       <a href="<?= url('/cuti/manual') ?>" class="btn btn-light">Batal</a>

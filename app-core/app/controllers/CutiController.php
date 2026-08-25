@@ -104,20 +104,6 @@ class CutiController extends Controller
             return $this->redirect('/cuti/create');
         }
 
-        // Upload surat (wajib utk Sakit)
-        $filePath = null;
-        if (!empty($_FILES['file_surat']['name'])) {
-            $filePath = $this->saveDocument($_FILES['file_surat']);
-            if (!$filePath) {
-                $this->flash('error', 'File surat tidak valid (PDF/JPG/PNG max 5 MB).');
-                return $this->redirect('/cuti/create');
-            }
-        }
-        if ($jenis === 'sakit' && !$filePath) {
-            $this->flash('error', 'Cuti sakit wajib melampirkan surat dokter.');
-            return $this->redirect('/cuti/create');
-        }
-
         // SATU pengajuan = SATU baris leave_requests, walau tanggalnya
         // tidak berurutan — tanggal individualnya (+ catatan per-tanggal
         // kalau diisi) disimpan di leave_request_dates.
@@ -127,11 +113,10 @@ class CutiController extends Controller
         }
 
         (new LeaveRequest())->createWithDates([
-            'user_id'    => $userId,
-            'jenis'      => $jenis,
-            'alasan'     => $alasan,
-            'file_surat' => $filePath,
-            'status'     => 'pending',
+            'user_id' => $userId,
+            'jenis'   => $jenis,
+            'alasan'  => $alasan,
+            'status'  => 'pending',
         ], $dateMap);
 
         unset($_SESSION['_old'], $_SESSION['_errors']);
@@ -227,16 +212,6 @@ class CutiController extends Controller
             return $this->redirect('/cuti/manual' . ($userId ? '?user_id=' . $userId : ''));
         }
 
-        // Surat opsional (situasi mendadak biasanya belum ada dokumen resmi)
-        $filePath = null;
-        if (!empty($_FILES['file_surat']['name'])) {
-            $filePath = $this->saveDocument($_FILES['file_surat']);
-            if (!$filePath) {
-                $this->flash('error', 'File surat tidak valid (PDF/JPG/PNG max 5 MB).');
-                return $this->redirect('/cuti/manual?user_id=' . $userId);
-            }
-        }
-
         $catatan = 'Diinput manual oleh ' . (user()['nama'] ?? 'HRD');
 
         $dateMap = [];
@@ -248,7 +223,6 @@ class CutiController extends Controller
             'user_id'     => $userId,
             'jenis'       => $jenis,
             'alasan'      => $alasan !== '' ? $alasan : '(tidak ada keterangan)',
-            'file_surat'  => $filePath,
             'status'      => 'approved',
             'verified_by' => user()['id'],
             'catatan'     => $catatan,
@@ -401,21 +375,6 @@ class CutiController extends Controller
             $attModel->deleteLeaveRowsForApprovedLeave($old, $oldDates);
         }
 
-        // File baru opsional — kalau tidak diupload ulang, file lama tetap dipakai.
-        $filePath = $old['file_surat'] ?? null;
-        if (!empty($_FILES['file_surat']['name'])) {
-            $newFile = $this->saveDocument($_FILES['file_surat']);
-            if (!$newFile) {
-                $this->flash('error', 'File surat tidak valid (PDF/JPG/PNG max 5 MB).');
-                return $this->redirect('/cuti/' . $id . '/edit');
-            }
-            if ($filePath) {
-                $oldFull = PUBLIC_PATH . '/uploads/' . $filePath;
-                if (is_file($oldFull)) @unlink($oldFull);
-            }
-            $filePath = $newFile;
-        }
-
         $catatan = trim(($old['catatan'] ? $old['catatan'] . ' ' : '') . '(diubah oleh ' . (user()['nama'] ?? 'HRD') . ')');
 
         // SATU baris TETAP SATU baris — tanggal-tanggalnya diganti
@@ -426,10 +385,9 @@ class CutiController extends Controller
             $dateMap[$d] = $notes[$d] ?? null;
         }
         $leaveModel->updateWithDates((int)$id, [
-            'jenis'      => $jenis,
-            'alasan'     => $alasan !== '' ? $alasan : '(tidak ada keterangan)',
-            'file_surat' => $filePath,
-            'catatan'    => $catatan,
+            'jenis'   => $jenis,
+            'alasan'  => $alasan !== '' ? $alasan : '(tidak ada keterangan)',
+            'catatan' => $catatan,
         ], $dateMap);
 
         if ($old['status'] === 'approved') {
@@ -494,13 +452,6 @@ class CutiController extends Controller
             (new Attendance())->deleteLeaveRowsForApprovedLeave($row, $dates);
         }
 
-        if (!empty($row['file_surat'])) {
-            $filePath = PUBLIC_PATH . '/uploads/' . $row['file_surat'];
-            if (is_file($filePath)) {
-                @unlink($filePath);
-            }
-        }
-
         $model->delete((int)$id); // leave_request_dates ikut terhapus via ON DELETE CASCADE
         $this->flash('success', 'Pengajuan cuti berhasil dihapus.');
         return $this->redirect($redirect);
@@ -521,25 +472,4 @@ class CutiController extends Controller
         return $notes;
     }
 
-    private function saveDocument(array $file): ?string
-    {
-        if ($file['error'] !== UPLOAD_ERR_OK) return null;
-        $max = (int)(App::$config['upload']['document_max'] ?? 5*1024*1024);
-        if ($file['size'] > $max) return null;
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mime  = $finfo->file($file['tmp_name']);
-        $okMime = [
-            'application/pdf' => 'pdf',
-            'image/jpeg'      => 'jpg',
-            'image/jpg'       => 'jpg',
-            'image/pjpeg'     => 'jpg',
-            'image/png'       => 'png',
-        ];
-        if (!isset($okMime[$mime])) return null;
-        $dir = UPLOADS_PATH . '/documents';
-        if (!is_dir($dir)) mkdir($dir, 0775, true);
-        $name = bin2hex(random_bytes(8)) . '_' . time() . '.' . $okMime[$mime];
-        if (!move_uploaded_file($file['tmp_name'], $dir . '/' . $name)) return null;
-        return 'documents/' . $name;
-    }
 }

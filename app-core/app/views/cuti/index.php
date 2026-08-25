@@ -34,12 +34,6 @@
             <?= format_leave_dates($r['tanggal_list'] ?? null, $r['tanggal_mulai'], $r['tanggal_selesai']) ?>
           </div>
           <div class="mt-1" style="font-size:.85rem"><?= e($r['alasan']) ?></div>
-          <?php if ($r['file_surat']): ?>
-            <a class="d-inline-block mt-1" style="font-size:.78rem"
-               href="<?= e(upload_url($r['file_surat'])) ?>" target="_blank">
-              <i class="bi bi-paperclip"></i> Lihat lampiran
-            </a>
-          <?php endif; ?>
           <?php if ($r['catatan']): ?>
             <div class="alert-soft mt-2"><i class="bi bi-chat-left-text"></i> <strong>Catatan:</strong> <?= e($r['catatan']) ?>
               <?php if ($r['verifier_nama']): ?>

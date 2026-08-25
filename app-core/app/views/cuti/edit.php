@@ -45,7 +45,7 @@
   </div>
 </div>
 
-<form method="post" enctype="multipart/form-data" class="card-soft" style="max-width:680px" id="form-cuti-edit">
+<form method="post" class="card-soft" style="max-width:680px" id="form-cuti-edit">
   <?= csrf_field() ?>
 
   <label class="form-label fw-semibold">Karyawan</label>
@@ -83,16 +83,6 @@
 
   <label class="form-label fw-semibold">Keterangan <span class="text-muted-soft">(umum, opsional)</span></label>
   <textarea name="alasan" rows="3" class="form-control mb-3 <?= isset($errors['alasan'])?'is-invalid':'' ?>" maxlength="1000" placeholder="Boleh dikosongkan."><?= e(old('alasan', $row['alasan'] === '(tidak ada keterangan)' ? '' : $row['alasan'])) ?></textarea>
-
-  <label class="form-label fw-semibold">Surat / Lampiran <span class="text-muted-soft">(opsional)</span></label>
-  <?php if (!empty($row['file_surat'])): ?>
-    <div class="mb-2" style="font-size:.85rem">
-      <i class="bi bi-paperclip"></i> Lampiran saat ini:
-      <a href="<?= e(upload_url($row['file_surat'])) ?>" target="_blank">lihat file</a>
-    </div>
-  <?php endif; ?>
-  <input type="file" name="file_surat" class="form-control mb-3" accept="application/pdf,image/jpeg,image/png">
-  <div class="text-muted-soft mb-3" style="font-size:.78rem">Kosongkan kalau tidak ingin mengganti lampiran yang sudah ada.</div>
 
   <div class="d-flex gap-2 justify-content-end">
     <a href="<?= url('/verifikasi-cuti') ?>" class="btn btn-light">Batal</a>

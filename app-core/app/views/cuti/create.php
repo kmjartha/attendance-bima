@@ -41,7 +41,7 @@
   </div>
 </div>
 
-<form method="post" enctype="multipart/form-data" class="card-soft" style="max-width:680px" id="form-cuti-create">
+<form method="post" class="card-soft" style="max-width:680px" id="form-cuti-create">
   <?= csrf_field() ?>
 
   <label class="form-label fw-semibold">Jenis Cuti</label>
@@ -76,9 +76,6 @@
   <label class="form-label fw-semibold">Alasan <span class="text-muted-soft">(umum, berlaku utk semua tanggal di atas)</span></label>
   <textarea name="alasan" rows="3" class="form-control mb-3 <?= isset($errors['alasan'])?'is-invalid':'' ?>" maxlength="1000" required placeholder="Jelaskan alasan pengajuan cuti…"><?= e(old('alasan')) ?></textarea>
   <?php if(isset($errors['alasan'])): ?><div class="invalid-feedback d-block mb-3"><?= e($errors['alasan']) ?></div><?php endif; ?>
-
-  <label class="form-label fw-semibold">Surat / Lampiran <span class="text-muted-soft">(wajib utk cuti Sakit)</span></label>
-  <input type="file" name="file_surat" class="form-control mb-3" accept="application/pdf,image/jpeg,image/png">
 
   <div class="d-flex gap-2 justify-content-end">
     <a href="<?= url('/cuti') ?>" class="btn btn-light">Batal</a>

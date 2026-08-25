@@ -37,13 +37,6 @@
     <div><?= nl2br(e($row['alasan'])) ?></div>
   </div>
 
-  <?php if (!empty($row['file_surat'])): ?>
-    <div class="mb-3">
-      <div class="text-muted-soft mb-1" style="font-size:.78rem">Surat / Lampiran</div>
-      <a href="<?= e(upload_url($row['file_surat'])) ?>" target="_blank"><i class="bi bi-paperclip"></i> Lihat file</a>
-    </div>
-  <?php endif; ?>
-
   <?php if ($row['status'] !== 'pending'): ?>
     <div class="mb-3">
       <div class="text-muted-soft mb-1" style="font-size:.78rem">Diproses oleh</div>

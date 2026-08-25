@@ -9,6 +9,21 @@ each file in phpMyAdmin without needing to click into a database first):
 3. `migration_leave_request_dates.sql` — adds per-date leave tracking (lets one
    leave request cover several non-consecutive dates)
 
+   After importing #3, also run these once via SSH (PHP scripts, not SQL —
+   phpMyAdmin can't run these):
+   ```
+   php app-core/app/cron/backfill_leave_request_dates.php
+   php app-core/app/cron/backfill_leave_attendance.php
+   ```
+
 If the database already exists and you're only adding a new feature,
 you only need to run the migration file(s) you haven't run yet — each
 one is safe to run more than once.
+
+## Optional cleanup
+
+- `migration_drop_file_surat.sql` — the leave-attachment upload feature
+  was fully removed from the app. This drops the now-unused
+  `file_surat` column. Not required (the app works fine leaving the
+  empty column in place) and irreversible, so only run it if you want
+  the schema fully clean.

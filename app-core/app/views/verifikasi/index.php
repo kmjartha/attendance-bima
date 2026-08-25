@@ -54,13 +54,7 @@
             <td>
               <?= format_leave_dates($r['tanggal_list'], $r['tanggal_mulai'], $r['tanggal_selesai']) ?>
             </td>
-            <td style="max-width:280px"><?= e($r['alasan']) ?>
-              <?php if ($r['file_surat']): ?>
-                <a class="d-block mt-1" style="font-size:.78rem" href="<?= e(upload_url($r['file_surat'])) ?>" target="_blank">
-                  <i class="bi bi-paperclip"></i> Lampiran
-                </a>
-              <?php endif; ?>
-            </td>
+            <td style="max-width:280px"><?= e($r['alasan']) ?></td>
             <td>
               <?= status_badge($r['status']) ?>
               <?php if ($r['catatan']): ?>
