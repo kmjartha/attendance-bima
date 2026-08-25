@@ -139,8 +139,6 @@ class CutiController extends Controller
         return $this->redirect('/cuti');
     }
 
-<<<<<<< HEAD
-=======
     /** GET /cuti/manual — HRD: lihat riwayat & input cuti baru langsung utk satu karyawan */
     public function manualCreate(): string
     {
@@ -298,7 +296,6 @@ class CutiController extends Controller
         ], $layout);
     }
 
->>>>>>> 95eafbc (update)
     /** GET /cuti/{id}/edit — HRD ubah tanggal/jenis cuti yg sudah ada (utk perbaiki kesalahan input) */
     public function editForm(string $id): string
     {

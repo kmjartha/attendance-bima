@@ -70,17 +70,10 @@
             <td class="text-end">
               <div class="d-flex flex-wrap gap-1 justify-content-end align-items-center">
                 <?php if ($r['status'] === 'pending'): ?>
-<<<<<<< HEAD
-                  <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#mApprove<?= $r['id'] ?>">
-                    <i class="bi bi-check-lg"></i> Setujui
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#mReject<?= $r['id'] ?>">
-=======
                   <button class="btn btn-sm btn-success cuti-action-btn" data-bs-toggle="modal" data-bs-target="#mApprove<?= $r['id'] ?>">
                     <i class="bi bi-check-lg"></i> Setujui
                   </button>
                   <button class="btn btn-sm btn-outline-danger cuti-action-btn" data-bs-toggle="modal" data-bs-target="#mReject<?= $r['id'] ?>">
->>>>>>> 95eafbc (update)
                     <i class="bi bi-x-lg"></i> Tolak
                   </button>
                 <?php else: ?>
@@ -89,15 +82,6 @@
                   </span>
                 <?php endif; ?>
                 <?php if (has_role('HRD')): ?>
-<<<<<<< HEAD
-                  <a href="<?= url('/cuti/'.$r['id'].'/edit') ?>" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-pencil-square"></i> Ubah
-                  </a>
-                  <form method="post" action="<?= url('/cuti/'.$r['id'].'/delete') ?>" class="d-inline-block">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="redirect_to" value="<?= e('/verifikasi-cuti' . ($status ? '?status=' . urlencode($status) : '')) ?>">
-                    <button type="submit" class="btn btn-sm btn-outline-danger">
-=======
                   <a href="<?= url('/cuti/'.$r['id'].'/edit') ?>" class="btn btn-sm btn-outline-primary cuti-action-btn">
                     <i class="bi bi-pencil-square"></i> Ubah
                   </a>
@@ -105,7 +89,6 @@
                     <?= csrf_field() ?>
                     <input type="hidden" name="redirect_to" value="<?= e('/verifikasi-cuti' . ($status ? '?status=' . urlencode($status) : '')) ?>">
                     <button type="submit" class="btn btn-sm btn-outline-danger cuti-action-btn">
->>>>>>> 95eafbc (update)
                       <i class="bi bi-trash3"></i> Hapus
                     </button>
                   </form>
