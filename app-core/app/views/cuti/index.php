@@ -47,6 +47,9 @@
               <?php endif; ?>
             </div>
           <?php endif; ?>
+          <a href="<?= url('/cuti/'.$r['id'].'/lihat') ?>" class="d-inline-block mt-2" style="font-size:.78rem">
+            <i class="bi bi-eye"></i> Lihat Detail
+          </a>
         </div>
       </div>
     <?php endforeach; ?>

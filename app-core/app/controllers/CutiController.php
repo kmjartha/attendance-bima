@@ -139,6 +139,166 @@ class CutiController extends Controller
         return $this->redirect('/cuti');
     }
 
+<<<<<<< HEAD
+=======
+    /** GET /cuti/manual — HRD: lihat riwayat & input cuti baru langsung utk satu karyawan */
+    public function manualCreate(): string
+    {
+        $userModel = new User();
+        $karyawan  = $userModel->allWithRole();
+
+        $selectedUserId = (int)($_GET['user_id'] ?? 0);
+        $selectedUser   = null;
+        $existingLeaves = [];
+        $blocked        = [];
+
+        if ($selectedUserId) {
+            $selectedUser = $userModel->find($selectedUserId);
+            if ($selectedUser) {
+                $leaveModel     = new LeaveRequest();
+                $existingLeaves = $leaveModel->listFor($selectedUserId);
+                $blocked        = $leaveModel->existingDatesForUser($selectedUserId);
+            } else {
+                $selectedUserId = 0;
+            }
+        }
+
+        $holidays = array_column((new Holiday())->allOrdered(), 'tanggal');
+
+        return $this->render('cuti.manual', [
+            'title'          => 'Input Cuti Manual',
+            'karyawan'       => $karyawan,
+            'selectedUserId' => $selectedUserId,
+            'selectedUser'   => $selectedUser,
+            'existingLeaves' => $existingLeaves,
+            'blockedDates'   => $blocked,
+            'holidayDates'   => $holidays,
+        ]);
+    }
+
+    /** POST /cuti/manual — buat cuti baru utk karyawan terpilih, langsung berstatus disetujui */
+    public function manualStore(): string
+    {
+        $userId = (int)($_POST['user_id'] ?? 0);
+        $jenis  = $_POST['jenis'] ?? '';
+        $alasan = trim((string)($_POST['alasan'] ?? ''));
+
+        $rawDates = $_POST['tanggal'] ?? [];
+        $dates = [];
+        if (is_array($rawDates)) {
+            foreach (array_unique($rawDates) as $d) {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d)) {
+                    $dates[] = $d;
+                }
+            }
+        }
+        sort($dates);
+
+        $notes = $this->parseDateNotes($_POST['catatan_tanggal'] ?? []);
+
+        $v = Validator::make($_POST, [
+            'user_id' => 'required',
+            'jenis'   => 'required',
+        ]);
+        if (empty($dates)) {
+            $v->addError('tanggal', 'Pilih minimal satu tanggal di kalender.');
+        }
+        if (!in_array($jenis, ['sakit','tahunan','melahirkan','menikah','darurat'], true)) {
+            $v->addError('jenis', 'Jenis cuti tidak valid.');
+        }
+
+        $userModel = new User();
+        $target    = $userId ? $userModel->find($userId) : null;
+        if (!$target) {
+            $v->addError('user_id', 'Karyawan tidak ditemukan.');
+        }
+
+        $leaveModel = new LeaveRequest();
+        if ($userId) {
+            $blocked = $leaveModel->existingDatesForUser($userId);
+            $clash = array_values(array_intersect($dates, array_keys($blocked)));
+            if (!empty($clash)) {
+                $v->addError('tanggal', 'Tanggal ' . implode(', ', $clash) . ' sudah dipakai cuti lain.');
+            }
+        }
+
+        if ($v->fails()) {
+            $_SESSION['_old']    = $_POST;
+            $_SESSION['_errors'] = $v->errors();
+            $this->flash('error', 'Periksa kembali isian Anda.');
+            return $this->redirect('/cuti/manual' . ($userId ? '?user_id=' . $userId : ''));
+        }
+
+        // Surat opsional (situasi mendadak biasanya belum ada dokumen resmi)
+        $filePath = null;
+        if (!empty($_FILES['file_surat']['name'])) {
+            $filePath = $this->saveDocument($_FILES['file_surat']);
+            if (!$filePath) {
+                $this->flash('error', 'File surat tidak valid (PDF/JPG/PNG max 5 MB).');
+                return $this->redirect('/cuti/manual?user_id=' . $userId);
+            }
+        }
+
+        $catatan = 'Diinput manual oleh ' . (user()['nama'] ?? 'HRD');
+
+        $dateMap = [];
+        foreach ($dates as $d) {
+            $dateMap[$d] = $notes[$d] ?? null;
+        }
+
+        $leaveId = $leaveModel->createWithDates([
+            'user_id'     => $userId,
+            'jenis'       => $jenis,
+            'alasan'      => $alasan !== '' ? $alasan : '(tidak ada keterangan)',
+            'file_surat'  => $filePath,
+            'status'      => 'approved',
+            'verified_by' => user()['id'],
+            'catatan'     => $catatan,
+        ], $dateMap);
+
+        // Langsung disetujui -> potong jatah cuti tahunan kecuali 'sakit', lalu tulis attendance.
+        if ($jenis !== 'sakit') {
+            $sisa = max(0, (int)$target['jumlah_cuti'] - count($dates));
+            $userModel->update($userId, ['jumlah_cuti' => $sisa]);
+        }
+        $leave = $leaveModel->find($leaveId);
+        if ($leave) {
+            (new Attendance())->syncFromApprovedLeave($leave, $dates);
+        }
+
+        unset($_SESSION['_old'], $_SESSION['_errors']);
+        $n = count($dates);
+        $this->flash('success', "Cuti manual berhasil diinput untuk {$n} hari dan langsung disetujui.");
+        return $this->redirect('/cuti/manual?user_id=' . $userId);
+    }
+
+    /** GET /cuti/{id}/lihat — lihat detail cuti (read-only). Pemilik cuti sendiri, atau role verifikator. */
+    public function show(string $id): string
+    {
+        $leaveModel = new LeaveRequest();
+        $row = $leaveModel->findWithUser((int)$id);
+        if (!$row) {
+            $this->flash('error', 'Data cuti tidak ditemukan.');
+            return $this->redirect('/cuti');
+        }
+
+        $isOwner = (int)$row['user_id'] === (int)user()['id'];
+        if (!$isOwner && !has_role('HRD', 'Supervisor', 'Kepsek')) {
+            http_response_code(403);
+            return $this->render('errors.403', ['title' => '403'], 'auth');
+        }
+
+        $dates = $leaveModel->datesFor((int)$id);
+        $layout = is_pegawai() ? 'mobile' : 'app';
+
+        return $this->render('cuti.show', [
+            'title' => 'Detail Cuti',
+            'row'   => $row,
+            'dates' => $dates,
+        ], $layout);
+    }
+
+>>>>>>> 95eafbc (update)
     /** GET /cuti/{id}/edit — HRD ubah tanggal/jenis cuti yg sudah ada (utk perbaiki kesalahan input) */
     public function editForm(string $id): string
     {

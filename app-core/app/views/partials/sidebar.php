@@ -51,6 +51,11 @@
 
     <?php if (in_array($role, ['HRD','Supervisor','Kepsek'], true)): ?>
       <div class="group-label">Pengelolaan</div>
+      <?php if (has_role('HRD')): ?>
+        <a href="<?= url('/cuti/manual') ?>" class="<?= is_active('/cuti/manual') ?>">
+          <i class="bi bi-calendar-plus"></i> Input Cuti Manual
+        </a>
+      <?php endif; ?>
       <a href="<?= url('/verifikasi-cuti') ?>" class="<?= is_active('/verifikasi-cuti') ?>">
         <i class="bi bi-check2-square"></i> Verifikasi Cuti
         <?php

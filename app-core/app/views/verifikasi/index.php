@@ -1,3 +1,13 @@
+<style>
+.cuti-action-btn {
+  min-width: 92px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.cuti-action-btn-form { margin: 0; padding: 0; border: 0; line-height: 0; }
+</style>
 <div class="page-head d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div>
     <h2 class="mb-1">Verifikasi Cuti</h2>
@@ -60,10 +70,17 @@
             <td class="text-end">
               <div class="d-flex flex-wrap gap-1 justify-content-end align-items-center">
                 <?php if ($r['status'] === 'pending'): ?>
+<<<<<<< HEAD
                   <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#mApprove<?= $r['id'] ?>">
                     <i class="bi bi-check-lg"></i> Setujui
                   </button>
                   <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#mReject<?= $r['id'] ?>">
+=======
+                  <button class="btn btn-sm btn-success cuti-action-btn" data-bs-toggle="modal" data-bs-target="#mApprove<?= $r['id'] ?>">
+                    <i class="bi bi-check-lg"></i> Setujui
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger cuti-action-btn" data-bs-toggle="modal" data-bs-target="#mReject<?= $r['id'] ?>">
+>>>>>>> 95eafbc (update)
                     <i class="bi bi-x-lg"></i> Tolak
                   </button>
                 <?php else: ?>
@@ -72,6 +89,7 @@
                   </span>
                 <?php endif; ?>
                 <?php if (has_role('HRD')): ?>
+<<<<<<< HEAD
                   <a href="<?= url('/cuti/'.$r['id'].'/edit') ?>" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-pencil-square"></i> Ubah
                   </a>
@@ -79,6 +97,15 @@
                     <?= csrf_field() ?>
                     <input type="hidden" name="redirect_to" value="<?= e('/verifikasi-cuti' . ($status ? '?status=' . urlencode($status) : '')) ?>">
                     <button type="submit" class="btn btn-sm btn-outline-danger">
+=======
+                  <a href="<?= url('/cuti/'.$r['id'].'/edit') ?>" class="btn btn-sm btn-outline-primary cuti-action-btn">
+                    <i class="bi bi-pencil-square"></i> Ubah
+                  </a>
+                  <form method="post" action="<?= url('/cuti/'.$r['id'].'/delete') ?>" class="d-inline-flex cuti-action-btn-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="redirect_to" value="<?= e('/verifikasi-cuti' . ($status ? '?status=' . urlencode($status) : '')) ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger cuti-action-btn">
+>>>>>>> 95eafbc (update)
                       <i class="bi bi-trash3"></i> Hapus
                     </button>
                   </form>

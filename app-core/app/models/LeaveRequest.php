@@ -258,10 +258,11 @@ class LeaveRequest extends Model
     {
         $stmt = $this->db()->prepare(
             "SELECT lr.*, u.nama AS user_nama, u.niy AS user_niy, r.name AS user_role,
-                    u.jumlah_cuti AS user_jumlah_cuti
+                    u.jumlah_cuti AS user_jumlah_cuti, v.nama AS verifier_nama
              FROM leave_requests lr
              JOIN users u ON u.id = lr.user_id
              JOIN roles r ON r.id = u.role_id
+             LEFT JOIN users v ON v.id = lr.verified_by
              WHERE lr.id = ? LIMIT 1"
         );
         $stmt->execute([$id]);
