@@ -32,15 +32,6 @@
   <div class="text-muted-soft">Sisa jatah cuti tahunan: <strong><?= (int)($me['jumlah_cuti'] ?? 0) ?> hari</strong></div>
 </div>
 
-<div class="alert alert-info d-flex gap-2 align-items-start" role="alert" style="max-width:680px">
-  <i class="bi bi-info-circle-fill mt-1"></i>
-  <div>
-    Klik tanggal di kalender di bawah utk memilih — boleh tidak berurutan.
-    Tanggal yang sudah ada pengajuan cuti lain (menunggu atau sudah disetujui) akan otomatis terkunci agar tidak dobel.
-    <div class="mt-2 fw-semibold" id="cal-selected-info">&nbsp;</div>
-  </div>
-</div>
-
 <form method="post" class="card-soft" style="max-width:680px" id="form-cuti-create">
   <?= csrf_field() ?>
 
@@ -71,8 +62,6 @@
   <div class="invalid-feedback d-block mt-2 mb-2 <?= isset($errors['tanggal'])?'':'d-none' ?>" id="cal-error"><?= e($errors['tanggal'] ?? 'Pilih tanggal cuti terlebih dahulu di kalender.') ?></div>
   <button type="button" class="btn btn-sm btn-outline-secondary my-2" id="cal-clear">Hapus Pilihan</button>
 
-  <div id="cal-date-notes" class="mb-1"></div>
-
   <label class="form-label fw-semibold">Alasan <span class="text-muted-soft">(umum, berlaku utk semua tanggal di atas)</span></label>
   <textarea name="alasan" rows="3" class="form-control mb-3 <?= isset($errors['alasan'])?'is-invalid':'' ?>" maxlength="1000" required placeholder="Jelaskan alasan pengajuan cuti…"><?= e(old('alasan')) ?></textarea>
   <?php if(isset($errors['alasan'])): ?><div class="invalid-feedback d-block mb-3"><?= e($errors['alasan']) ?></div><?php endif; ?>
@@ -91,10 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const grid      = document.getElementById('cal-grid');
   const title     = document.getElementById('cal-title');
-  const info      = document.getElementById('cal-selected-info');
   const errBox    = document.getElementById('cal-error');
   const hiddenBox = document.getElementById('cal-hidden-inputs');
-  const notesBox  = document.getElementById('cal-date-notes');
   const form      = document.getElementById('form-cuti-create');
 
   const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -103,8 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const today = new Date();
   const selected = new Set(initialSelected);
-  const dateNotes = <?= json_encode((array)old('catatan_tanggal', [])) ?>; // date -> teks, diisi user per tanggal
-
   let viewYear, viewMonth;
   if (selected.size) {
     const first = Array.from(selected).sort()[0];
@@ -174,19 +159,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (blockedInfo) {
       const label = jenisLabel[blockedInfo.jenis] || blockedInfo.jenis;
       const statusLabel = blockedInfo.status === 'pending' ? 'menunggu verifikasi' : 'disetujui';
-      info.textContent = 'Tanggal ' + dateStr + ' sudah dipakai cuti ' + label + ' (' + statusLabel + ') — tidak bisa dipilih lagi.';
       return;
     }
     errBox.classList.add('d-none');
     if (selected.has(dateStr)) {
       selected.delete(dateStr);
-      delete dateNotes[dateStr];
     } else {
       selected.add(dateStr);
     }
     syncHiddenInputs();
-    renderDateNotes();
-    updateInfo();
     render();
   }
 
@@ -201,58 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function renderDateNotes() {
-    notesBox.innerHTML = '';
-    const sortedDates = Array.from(selected).sort();
-    if (!sortedDates.length) return;
-
-    const header = document.createElement('label');
-    header.className = 'form-label fw-semibold mb-1';
-    header.textContent = 'Keterangan per tanggal (opsional)';
-    notesBox.appendChild(header);
-
-    const hint = document.createElement('div');
-    hint.className = 'text-muted-soft mb-2';
-    hint.style.fontSize = '.78rem';
-    hint.textContent = 'Kosongkan kalau alasannya sama semua — pakai kolom Alasan di bawah saja.';
-    notesBox.appendChild(hint);
-
-    const opt = { weekday: 'short', day: 'numeric', month: 'long' };
-    sortedDates.forEach(d => {
-      const label = new Date(d + 'T00:00:00').toLocaleDateString('id-ID', opt);
-      const row = document.createElement('div');
-      row.className = 'input-group input-group-sm mb-2';
-
-      const span = document.createElement('span');
-      span.className = 'input-group-text';
-      span.style.minWidth = '150px';
-      span.textContent = label;
-
-      const inp = document.createElement('input');
-      inp.type = 'text';
-      inp.className = 'form-control';
-      inp.maxLength = 255;
-      inp.name = 'catatan_tanggal[' + d + ']';
-      inp.value = dateNotes[d] || '';
-      inp.placeholder = 'khusus tanggal ini (opsional)';
-      inp.addEventListener('input', () => { dateNotes[d] = inp.value; });
-
-      row.appendChild(span);
-      row.appendChild(inp);
-      notesBox.appendChild(row);
-    });
-  }
-
-  function updateInfo() {
-    if (!selected.size) {
-      info.textContent = 'Belum ada tanggal dipilih.';
-      return;
-    }
-    const opt = { day: 'numeric', month: 'long', year: 'numeric' };
-    const labels = Array.from(selected).sort().map(d => new Date(d + 'T00:00:00').toLocaleDateString('id-ID', opt));
-    info.textContent = 'Dipilih (' + selected.size + ' hari): ' + labels.join(', ');
-  }
-
   document.getElementById('cal-prev').addEventListener('click', () => {
     viewMonth--;
     if (viewMonth < 0) { viewMonth = 11; viewYear--; }
@@ -265,10 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('cal-clear').addEventListener('click', () => {
     selected.clear();
-    for (const k in dateNotes) delete dateNotes[k];
     syncHiddenInputs();
-    renderDateNotes();
-    updateInfo();
     render();
   });
 
@@ -280,8 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  updateInfo();
-  renderDateNotes();
   render();
 });
 </script>
