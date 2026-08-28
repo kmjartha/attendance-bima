@@ -18,12 +18,12 @@ $date = $date ?? date('Y-m-d');
     <thead style="background:var(--surface-2)">
       <tr>
         <th>#</th>
-        <th>NIY</th><th>Nama</th><th>Role</th><th>Tanggal</th><th>Masuk</th><th>Menit Telat</th><th>Pulang</th><th class="text-center">Status</th><th class="text-end">Match</th><th class="text-end">Aksi</th>
+        <th>NIY</th><th>Nama</th><th>Role</th><th>Tanggal</th><th>Masuk</th><th>Menit Telat</th><th>Alasan Telat</th><th>Pulang</th><th class="text-center">Status</th><th class="text-end">Match</th><th class="text-end">Aksi</th>
       </tr>
     </thead>
     <tbody>
       <?php if (!$rows): ?>
-        <tr><td colspan="11" class="text-center text-muted-soft py-4">Tidak ada data karyawan pada tanggal ini.</td></tr>
+        <tr><td colspan="12" class="text-center text-muted-soft py-4">Tidak ada data karyawan pada tanggal ini.</td></tr>
       <?php endif; ?>
       <?php foreach ($rows as $i => $r): ?>
         <tr data-edit-row="<?= (int)$r['user_id'] ?>">
@@ -36,6 +36,7 @@ $date = $date ?? date('Y-m-d');
             <input type="time" name="jam_masuk" form="edit-form-<?= (int)$r['user_id'] ?>" class="form-control form-control-sm edit-time-input bg-light text-muted" value="<?= e($r['jam_masuk'] ? date('H:i', strtotime($r['jam_masuk'])) : '') ?>" disabled>
           </td>
           <td class="text-center"><?= isset($r['terlambat_menit']) && $r['terlambat_menit']!==null ? (int)$r['terlambat_menit'] : '—' ?></td>
+          <td><?= ($r['status'] ?? '') === 'telat' && !empty($r['keterangan']) ? e($r['keterangan']) : '—' ?></td>
           <td>
             <input type="time" name="jam_keluar" form="edit-form-<?= (int)$r['user_id'] ?>" class="form-control form-control-sm edit-time-input bg-light text-muted" value="<?= e($r['jam_keluar'] ? date('H:i', strtotime($r['jam_keluar'])) : '') ?>" disabled>
           </td>

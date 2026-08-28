@@ -8,6 +8,12 @@ each file in phpMyAdmin without needing to click into a database first):
 2. `migration_cuti_manual.sql`     — adds the "darurat" (mendadak/force majeure) leave type
 3. `migration_leave_request_dates.sql` — adds per-date leave tracking (lets one
    leave request cover several non-consecutive dates)
+4. `migration_jenis_karyawan.sql` — adds the employee type used by the
+   employee create/edit forms
+
+   For #4, first select the database used by the application in phpMyAdmin.
+   The migration intentionally does not assume a database name, so it works
+   with both local and production database names.
 
    After importing #3, also run these once via SSH (PHP scripts, not SQL —
    phpMyAdmin can't run these):
