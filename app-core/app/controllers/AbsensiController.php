@@ -257,7 +257,25 @@ class AbsensiController extends Controller
                 'status'           => $status,
                 'keterangan'       => $reason ?: null,
             ];
-            $attModel->create($data);
+            // Ada jarak waktu antara pengecekan "$today" di atas dan INSERT
+            // di sini. Kalau user tap dobel, koneksi lambat lalu di-retry,
+            // atau ada 2 tab/device, dua request bisa lolos pengecekan itu
+            // bersamaan dan sama-sama mencoba INSERT -- yang kedua akan
+            // ditolak DB oleh unique key uniq_user_date(user_id, tanggal)
+            // dengan SQLSTATE 23000. Sebelumnya exception ini tidak
+            // ditangkap sama sekali, jadi malah muncul sebagai HTTP 500
+            // dengan pesan SQL mentah ke user. Di sini kita tangkap khusus
+            // pelanggaran unique key itu dan perlakukan sebagai "sudah
+            // absen" (bukan error), karena secara faktual absen masuk yang
+            // pertama memang sudah tersimpan.
+            try {
+                $attModel->create($data);
+            } catch (\PDOException $e) {
+                if ((string)$e->getCode() === '23000') {
+                    return $this->json(['success'=>false,'message'=>'Anda sudah absen masuk hari ini']);
+                }
+                throw $e;
+            }
             return $this->json([
                 'success' => true,
                 'message' => 'Absen masuk berhasil. Status: ' . strtoupper($status) . '.',

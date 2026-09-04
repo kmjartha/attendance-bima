@@ -29,8 +29,32 @@ class App
         try {
             $router->dispatch($method, $uri);
         } catch (\Throwable $e) {
+            // Selalu catat detail asli ke log server, apapun environment-nya,
+            // supaya masih bisa didiagnosis walau tidak ditampilkan ke user.
+            error_log('[500] ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+
             http_response_code(500);
-            if ((self::$config['env'] ?? 'local') === 'local') {
+
+            $wantsJson = (
+                str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')
+                || ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest'
+                || str_starts_with($uri, '/absensi/submit')
+            );
+
+            $isLocal = (self::$config['env'] ?? 'local') === 'local';
+
+            if ($wantsJson) {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'message' => $isLocal
+                        ? ('Server error: ' . $e->getMessage())
+                        : 'Terjadi kesalahan pada server. Silakan coba lagi dalam beberapa saat.',
+                ]);
+                return;
+            }
+
+            if ($isLocal) {
                 echo '<pre style="padding:24px;font-family:monospace;background:#fff5f5;color:#7a1212;border-left:6px solid #c53030">';
                 echo "ERROR: " . htmlspecialchars($e->getMessage()) . "\n\n";
                 echo htmlspecialchars($e->getTraceAsString());

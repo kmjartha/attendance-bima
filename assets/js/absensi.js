@@ -429,34 +429,53 @@
     if (capturedDescriptor)        fd.append('descriptor', JSON.stringify(capturedDescriptor));
     if (reason)                 fd.append('keterangan', reason);
 
+    let res, text;
     try {
-      const res = await fetch(cfg.submitUrl, {
+      res = await fetch(cfg.submitUrl, {
         method: 'POST',
         credentials: 'same-origin',
         body: fd,
         headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': cfg.csrf },
       });
-      const text = await res.text();
-      if (!res.ok) {
-        throw new Error('HTTP ' + res.status + ': ' + text.slice(0, 300));
-      }
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch (err) {
-        throw new Error('Invalid JSON response: ' + text.slice(0, 300));
-      }
-      if (json.success) {
-        await Swal.fire({ icon:'success', title:'Berhasil', text: json.message, timer: 2200, showConfirmButton:false });
-        window.location = json.redirect || '/';
-      } else {
-        Swal.fire('Gagal', json.message || 'Terjadi kesalahan', 'error');
-        btn.disabled = false;
-        btn.innerHTML = oldHtml;
-      }
-    } catch (e) {
-      console.error('Absensi submit error:', e);
-      Swal.fire('Gagal', 'Tidak bisa menghubungi server: ' + e.message, 'error');
+      text = await res.text();
+    } catch (networkErr) {
+      // fetch() sendiri gagal (offline, DNS, dsb) -- ini beneran "tidak
+      // bisa menghubungi server", beda dari server yang menjawab tapi
+      // isinya error.
+      console.error('Absensi submit network error:', networkErr);
+      Swal.fire('Gagal', 'Tidak bisa menghubungi server. Periksa koneksi internet Anda.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = oldHtml;
+      return;
+    }
+
+    let json = null;
+    try {
+      json = JSON.parse(text);
+    } catch (err) {
+      json = null;
+    }
+
+    if (!res.ok) {
+      // Server sempat menjawab (mis. error tak terduga yang ditangkap
+      // App::run) -- tampilkan pesannya yang sudah ramah kalau ada,
+      // bukan HTML/teks mentah dari server.
+      Swal.fire('Gagal', json && json.message ? json.message : ('Server error (HTTP ' + res.status + '). Silakan coba lagi.'), 'error');
+      btn.disabled = false;
+      btn.innerHTML = oldHtml;
+      return;
+    }
+    if (!json) {
+      Swal.fire('Gagal', 'Respons server tidak valid. Silakan coba lagi.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = oldHtml;
+      return;
+    }
+    if (json.success) {
+      await Swal.fire({ icon:'success', title:'Berhasil', text: json.message, timer: 2200, showConfirmButton:false });
+      window.location = json.redirect || '/';
+    } else {
+      Swal.fire('Gagal', json.message || 'Terjadi kesalahan', 'error');
       btn.disabled = false;
       btn.innerHTML = oldHtml;
     }
