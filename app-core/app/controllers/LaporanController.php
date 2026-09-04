@@ -272,6 +272,18 @@ class LaporanController extends Controller
 
         $att = new Attendance();
         $existing = $attendanceId ? $att->find($attendanceId) : null;
+        // Kalau form dikirim tanpa attendance_id (HRD menambah koreksi baru,
+        // bukan mengedit baris yang sudah tampil), tetap harus dicek dulu
+        // apakah SUDAH ADA baris utk (user_id, tanggal) ini -- misalnya
+        // baris 'alpha' dari cron, atau baris 'izin'/'sakit' dari cuti --
+        // sebelum coba INSERT. Kalau tidak dicek, create() di bawah akan
+        // gagal dengan SQLSTATE 23000 (bentrok unique key uniq_user_date)
+        // persis seperti kasus absen masuk karyawan yang pernah terjadi;
+        // di sini kita perbaiki baris yang sudah ada itu, bukan menambah
+        // baris baru.
+        if (!$existing) {
+            $existing = $att->findByUserDate($userId, $date);
+        }
 
         $shiftId = (new UserShift())->defaultShiftId($userId);
         $shift = $shiftId ? (new Shift())->find($shiftId) : null;
@@ -294,8 +306,20 @@ class LaporanController extends Controller
             $att->update($existing['id'], $data);
             $this->flash('success', 'Kehadiran berhasil diperbarui.');
         } else {
-            $att->create($data);
-            $this->flash('success', 'Kehadiran berhasil ditambahkan.');
+            // Jaring pengaman terakhir kalau tetap ada race (mis. 2 HRD
+            // menyimpan koreksi utk orang & tanggal yang sama nyaris
+            // bersamaan) -- tangkap duplicate key, jangan biarkan crash
+            // mentah ke user.
+            try {
+                $att->create($data);
+                $this->flash('success', 'Kehadiran berhasil ditambahkan.');
+            } catch (\PDOException $e) {
+                if ((string)$e->getCode() === '23000') {
+                    $this->flash('error', 'Sudah ada data kehadiran untuk karyawan & tanggal ini. Silakan muat ulang halaman lalu edit baris yang ada.');
+                } else {
+                    throw $e;
+                }
+            }
         }
 
         return $this->redirect('/laporan/harian?date=' . urlencode($date));

@@ -104,6 +104,24 @@ class VerifikasiController extends Controller
             $days = max(1, count($dates));
             $sisa = max(0, (int)$req['user_jumlah_cuti'] - $days);
             $userM->update((int)$req['user_id'], ['jumlah_cuti' => $sisa]);
+        } elseif ($newStatus !== 'approved' && $req['status'] === 'approved') {
+            // Arah sebaliknya: pengajuan yang SEBELUMNYA sudah approved,
+            // sekarang diubah keputusannya jadi bukan approved lagi (mis.
+            // HRD keliru approve lalu ganti jadi tolak). Kasus ini
+            // sebelumnya SAMA SEKALI tidak ditangani -- kuota cuti yang
+            // sudah kadung terpotong tidak pernah dikembalikan, dan baris
+            // izin/sakit yang sudah ditulis ke attendances tidak pernah
+            // dihapus. Baris attendance yang tertinggal itu tetap
+            // memblokir absen masuk karyawan yang bersangkutan meski
+            // statusnya di halaman ini sudah tidak lagi menunjukkan cuti
+            // yang disetujui -- persis kasus yang ditemukan pada baris
+            // attendances id 3764 (user_id 37, tanggal 2026-09-04).
+            if ($req['jenis'] !== 'sakit') {
+                $days = max(1, count($dates));
+                $sisa = max(0, (int)$req['user_jumlah_cuti'] + $days);
+                $userM->update((int)$req['user_id'], ['jumlah_cuti' => $sisa]);
+            }
+            (new Attendance())->deleteLeaveRowsForApprovedLeave($req, $dates);
         }
 
         $model->update($targetId, [

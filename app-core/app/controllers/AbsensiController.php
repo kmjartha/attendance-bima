@@ -204,7 +204,6 @@ class AbsensiController extends Controller
             if ($today && $today['jam_masuk']) {
                 return $this->json(['success'=>false,'message'=>'Anda sudah absen masuk hari ini']);
             }
-
             // Tentukan tanggal shift yang sebenarnya SEBELUM cek hari libur/hari
             // efektif di bawah ini. Untuk shift yang melewati tengah malam (mis.
             // Malam 23:00 -> 07:00), kalau karyawan absen masuk di dini hari
@@ -257,17 +256,39 @@ class AbsensiController extends Controller
                 'status'           => $status,
                 'keterangan'       => $reason ?: null,
             ];
+            // $today bisa saja SUDAH ADA sebagai baris "placeholder" untuk
+            // tanggal ini walau jam_masuk-nya masih NULL -- misalnya baris
+            // 'alpha' yang ditulis cron mark_alpha, atau baris 'izin'/'sakit'
+            // dari sinkronisasi cuti yang disetujui tapi belakangan
+            // dibatalkan/diedit. Kalau begitu, karyawan ini SECARA FAKTA
+            // belum pernah absen masuk hari ini (makanya lolos pengecekan
+            // di atas) -- jadi yang benar adalah meng-UPDATE baris
+            // placeholder itu jadi absen masuk sungguhan, BUKAN mencoba
+            // INSERT baris baru (yang pasti gagal karena unique key
+            // (user_id, tanggal) sudah dipakai baris placeholder tsb, dan
+            // sebelumnya ini malah salah dilaporkan ke user sebagai "sudah
+            // absen masuk").
+            if ($today) {
+                $attModel->update((int)$today['id'], $data);
+                return $this->json([
+                    'success' => true,
+                    'message' => 'Absen masuk berhasil. Status: ' . strtoupper($status) . '.',
+                    'redirect'=> url('/absensi/riwayat'),
+                ]);
+            }
             // Ada jarak waktu antara pengecekan "$today" di atas dan INSERT
             // di sini. Kalau user tap dobel, koneksi lambat lalu di-retry,
             // atau ada 2 tab/device, dua request bisa lolos pengecekan itu
-            // bersamaan dan sama-sama mencoba INSERT -- yang kedua akan
-            // ditolak DB oleh unique key uniq_user_date(user_id, tanggal)
-            // dengan SQLSTATE 23000. Sebelumnya exception ini tidak
-            // ditangkap sama sekali, jadi malah muncul sebagai HTTP 500
-            // dengan pesan SQL mentah ke user. Di sini kita tangkap khusus
-            // pelanggaran unique key itu dan perlakukan sebagai "sudah
-            // absen" (bukan error), karena secara faktual absen masuk yang
-            // pertama memang sudah tersimpan.
+            // bersamaan dan sama-sama mencoba INSERT/UPDATE -- yang kedua
+            // bisa ditolak DB oleh unique key uniq_user_date(user_id,
+            // tanggal) dengan SQLSTATE 23000. Sebelumnya exception ini
+            // tidak ditangkap sama sekali, jadi malah muncul sebagai HTTP
+            // 500 dengan pesan SQL mentah ke user. Di sini kita tangkap
+            // khusus pelanggaran unique key itu dan perlakukan sebagai
+            // "sudah absen" (bukan error tak dikenal), karena kasus ini
+            // (tanpa $today di awal, lalu race saat INSERT) memang berarti
+            // request lain barusan berhasil duluan membuat baris absen
+            // masuk yang sesungguhnya.
             try {
                 $attModel->create($data);
             } catch (\PDOException $e) {
