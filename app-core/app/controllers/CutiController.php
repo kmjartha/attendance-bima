@@ -64,6 +64,7 @@ class CutiController extends Controller
         $userId = (int)user()['id'];
         $jenis  = $_POST['jenis'] ?? '';
         $alasan = trim((string)($_POST['alasan'] ?? ''));
+        $lampiran = $this->saveLeaveAttachment();
 
         $rawDates = $_POST['tanggal'] ?? [];
         $dates = [];
@@ -87,6 +88,9 @@ class CutiController extends Controller
         }
         if (!in_array($jenis, ['sakit','tahunan','melahirkan','menikah'], true)) {
             $v->addError('jenis', 'Jenis cuti tidak valid.');
+        }
+        if ($jenis === 'sakit' && $lampiran === null) {
+            $v->addError('lampiran', 'Lampiran wajib diunggah untuk pengajuan izin sakit.');
         }
 
         // Jangan sampai tanggal yg dipilih tabrakan dgn cuti lain yg masih
@@ -113,10 +117,11 @@ class CutiController extends Controller
         }
 
         (new LeaveRequest())->createWithDates([
-            'user_id' => $userId,
-            'jenis'   => $jenis,
-            'alasan'  => $alasan,
-            'status'  => 'pending',
+            'user_id'    => $userId,
+            'jenis'      => $jenis,
+            'alasan'     => $alasan,
+            'file_surat' => $lampiran,
+            'status'     => 'pending',
         ], $dateMap);
 
         unset($_SESSION['_old'], $_SESSION['_errors']);
@@ -318,6 +323,8 @@ class CutiController extends Controller
         $userId = (int)$old['user_id'];
         $jenis  = $_POST['jenis'] ?? '';
         $alasan = trim((string)($_POST['alasan'] ?? ''));
+        $uploadingNewAttachment = $this->hasLeaveAttachment();
+        $lampiran = $uploadingNewAttachment ? $this->saveLeaveAttachment() : ($old['file_surat'] ?? null);
 
         $rawDates = $_POST['tanggal'] ?? [];
         $dates = [];
@@ -341,6 +348,12 @@ class CutiController extends Controller
         }
         if (!in_array($jenis, ['sakit','tahunan','melahirkan','menikah','darurat'], true)) {
             $v->addError('jenis', 'Jenis cuti tidak valid.');
+        }
+        if ($jenis === 'sakit' && empty($old['file_surat']) && $lampiran === null) {
+            $v->addError('lampiran', 'Lampiran wajib diunggah untuk pengajuan izin sakit.');
+        }
+        if ($uploadingNewAttachment && $lampiran === null) {
+            $v->addError('lampiran', 'Lampiran tidak valid atau gagal diunggah.');
         }
 
         // Cegah tanggal hasil edit tabrakan dgn cuti LAIN milik karyawan yg
@@ -375,6 +388,13 @@ class CutiController extends Controller
             $attModel->deleteLeaveRowsForApprovedLeave($old, $oldDates);
         }
 
+        if ($uploadingNewAttachment && !empty($old['file_surat']) && $lampiran !== null) {
+            $oldFile = PUBLIC_PATH . '/uploads/' . ltrim($old['file_surat'], '/');
+            if (is_file($oldFile)) {
+                @unlink($oldFile);
+            }
+        }
+
         $catatan = trim(($old['catatan'] ? $old['catatan'] . ' ' : '') . '(diubah oleh ' . (user()['nama'] ?? 'HRD') . ')');
 
         // SATU baris TETAP SATU baris — tanggal-tanggalnya diganti
@@ -385,9 +405,10 @@ class CutiController extends Controller
             $dateMap[$d] = $notes[$d] ?? null;
         }
         $leaveModel->updateWithDates((int)$id, [
-            'jenis'   => $jenis,
-            'alasan'  => $alasan !== '' ? $alasan : '(tidak ada keterangan)',
-            'catatan' => $catatan,
+            'jenis'      => $jenis,
+            'alasan'     => $alasan !== '' ? $alasan : '(tidak ada keterangan)',
+            'file_surat' => $lampiran ?? $old['file_surat'],
+            'catatan'    => $catatan,
         ], $dateMap);
 
         if ($old['status'] === 'approved') {
@@ -452,9 +473,72 @@ class CutiController extends Controller
             (new Attendance())->deleteLeaveRowsForApprovedLeave($row, $dates);
         }
 
+        if (!empty($row['file_surat'])) {
+            $file = PUBLIC_PATH . '/uploads/' . ltrim($row['file_surat'], '/');
+            if (is_file($file)) {
+                @unlink($file);
+            }
+        }
+
         $model->delete((int)$id); // leave_request_dates ikut terhapus via ON DELETE CASCADE
         $this->flash('success', 'Pengajuan cuti berhasil dihapus.');
         return $this->redirect($redirect);
+    }
+
+    private function hasLeaveAttachment(): bool
+    {
+        return !empty($_FILES['lampiran']['name']) || (!empty($_FILES['lampiran']) && ($_FILES['lampiran']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE);
+    }
+
+    private function saveLeaveAttachment(): ?string
+    {
+        if (empty($_FILES['lampiran']) || !is_uploaded_file($_FILES['lampiran']['tmp_name'])) {
+            return null;
+        }
+
+        $file = $_FILES['lampiran'];
+        $error = $file['error'] ?? UPLOAD_ERR_NO_FILE;
+        if ($error !== UPLOAD_ERR_OK) {
+            if (in_array($error, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+                $this->flash('error', 'Lampiran melebihi 5 MB.');
+            } else {
+                $this->flash('error', 'Gagal mengunggah lampiran.');
+            }
+            return null;
+        }
+
+        if (empty($file['size']) || (int)$file['size'] > 5 * 1024 * 1024) {
+            $this->flash('error', 'Lampiran melebihi 5 MB.');
+            return null;
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($file['tmp_name']);
+        $allowed = [
+            'application/pdf' => 'pdf',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+        ];
+
+        if (!isset($allowed[$mime])) {
+            $this->flash('error', 'Format lampiran harus PDF, JPG, atau PNG.');
+            return null;
+        }
+
+        $dir = PUBLIC_PATH . '/uploads/leave';
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            $this->flash('error', 'Gagal menyiapkan folder lampiran.');
+            return null;
+        }
+
+        $name = 'leave_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $allowed[$mime];
+        $dest = $dir . '/' . $name;
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            $this->flash('error', 'Gagal menyimpan lampiran.');
+            return null;
+        }
+
+        return 'leave/' . $name;
     }
 
     /** Ubah $_POST['catatan_tanggal'] (assoc: tanggal => teks) jadi array bersih, trim + potong 255 char. */

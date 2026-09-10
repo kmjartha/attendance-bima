@@ -31,7 +31,7 @@
   <h2 class="mb-1">Ubah Cuti</h2>
 </div>
 
-<form method="post" class="card-soft" style="max-width:680px" id="form-cuti-edit">
+<form method="post" enctype="multipart/form-data" class="card-soft" style="max-width:680px" id="form-cuti-edit">
   <?= csrf_field() ?>
 
   <label class="form-label fw-semibold">Karyawan</label>
@@ -67,6 +67,17 @@
 
   <label class="form-label fw-semibold">Keterangan <span class="text-muted-soft">(umum, opsional)</span></label>
   <textarea name="alasan" rows="3" class="form-control mb-3 <?= isset($errors['alasan'])?'is-invalid':'' ?>" maxlength="1000" placeholder="Boleh dikosongkan."><?= e(old('alasan', $row['alasan'] === '(tidak ada keterangan)' ? '' : $row['alasan'])) ?></textarea>
+
+  <label class="form-label fw-semibold">Lampiran <span class="text-muted-soft">(opsional, unggah baru untuk mengganti file lama; wajib untuk izin sakit jika belum ada lampiran)</span></label>
+  <?php if (!empty($row['file_surat'])): ?>
+    <div class="mb-2">
+      <a href="<?= e(upload_url($row['file_surat'])) ?>" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-paperclip"></i> Lihat Lampiran Saat Ini
+      </a>
+    </div>
+  <?php endif; ?>
+  <input type="file" name="lampiran" class="form-control mb-3 <?= isset($errors['lampiran'])?'is-invalid':'' ?>" accept=".pdf,image/jpeg,image/png" />
+  <?php if(isset($errors['lampiran'])): ?><div class="invalid-feedback d-block mb-3"><?= e($errors['lampiran']) ?></div><?php endif; ?>
 
   <div class="d-flex gap-2 justify-content-end">
     <a href="<?= url('/verifikasi-cuti') ?>" class="btn btn-light">Batal</a>

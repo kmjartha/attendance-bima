@@ -32,7 +32,7 @@
   <div class="text-muted-soft">Sisa jatah cuti tahunan: <strong><?= (int)($me['jumlah_cuti'] ?? 0) ?> hari</strong></div>
 </div>
 
-<form method="post" class="card-soft" style="max-width:680px" id="form-cuti-create">
+<form method="post" enctype="multipart/form-data" class="card-soft" style="max-width:680px" id="form-cuti-create">
   <?= csrf_field() ?>
 
   <label class="form-label fw-semibold">Jenis Cuti</label>
@@ -65,6 +65,10 @@
   <label class="form-label fw-semibold">Alasan <span class="text-muted-soft">(umum, berlaku utk semua tanggal di atas)</span></label>
   <textarea name="alasan" rows="3" class="form-control mb-3 <?= isset($errors['alasan'])?'is-invalid':'' ?>" maxlength="1000" required placeholder="Jelaskan alasan pengajuan cuti…"><?= e(old('alasan')) ?></textarea>
   <?php if(isset($errors['alasan'])): ?><div class="invalid-feedback d-block mb-3"><?= e($errors['alasan']) ?></div><?php endif; ?>
+
+  <label class="form-label fw-semibold">Lampiran <span class="text-muted-soft">(wajib untuk izin sakit, format PDF/JPG/PNG max 5 MB)</span></label>
+  <input type="file" name="lampiran" class="form-control mb-3 <?= isset($errors['lampiran'])?'is-invalid':'' ?>" accept=".pdf,image/jpeg,image/png" />
+  <?php if(isset($errors['lampiran'])): ?><div class="invalid-feedback d-block mb-3"><?= e($errors['lampiran']) ?></div><?php endif; ?>
 
   <div class="d-flex gap-2 justify-content-end">
     <a href="<?= url('/cuti') ?>" class="btn btn-light">Batal</a>
