@@ -136,6 +136,15 @@ h3 { font-size: 1.1rem; }
 }
 .sidebar-nav a i { font-size: 1.05rem; width: 20px; text-align: center; }
 
+/* Menu induk dengan submenu (mis. Input Cuti) */
+.sidebar-nav a.nav-parent { cursor: pointer; }
+.sidebar-nav a.nav-parent.is-current { color: var(--primary-dark); font-weight: 600; }
+.sidebar-nav a.nav-parent .chev { margin-left: auto; width: auto; font-size: .75rem; transition: transform .2s ease; }
+.sidebar-nav a.nav-parent[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.sidebar-nav .nav-sub { margin: 0 0 2px 1.35rem; padding-left: .6rem; border-left: 1px solid var(--border); }
+.sidebar-nav .nav-sub a { font-size: .86rem; padding: .5rem .75rem; }
+.sidebar-nav .nav-sub a i { font-size: .95rem; }
+
 .sidebar-footer { padding: .85rem; border-top: 1px solid var(--border); }
 .sidebar-user {
   display: flex; align-items: center; gap: .65rem;
@@ -957,6 +966,7 @@ table.dataTable thead th { font-weight:600; font-size:.78rem; text-transform:upp
 .notif-item.tone-primary .ico { background: var(--primary-soft); color: var(--primary-dark); }
 .notif-item.tone-success .ico { background: #d8e6ff; color: #1d4ed8; }
 .notif-item.tone-danger  .ico { background: #fee2e2; color: #b91c1c; }
+.notif-item.tone-warning .ico { background: #fef3c7; color: #b45309; }
 .notif-item .body { min-width:0; }
 .notif-item .title { font-weight: 700; font-size: .95rem; color: var(--text); }
 .notif-item .msg   { font-size: .85rem; color: var(--text-muted); margin-top: 2px;

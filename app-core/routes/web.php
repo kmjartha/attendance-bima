@@ -62,6 +62,8 @@ $router->post("/cuti/create",     "CutiController@store",  [AuthMiddleware::clas
 $router->post("/cuti/{id}/delete", "CutiController@destroy", [AuthMiddleware::class, CsrfMiddleware::class, HrdOnly::class]);
 $router->get ("/cuti/manual",      "CutiController@manualCreate", [AuthMiddleware::class, HrdOnly::class]);
 $router->post("/cuti/manual",      "CutiController@manualStore",  [AuthMiddleware::class, CsrfMiddleware::class, HrdOnly::class]);
+$router->get ("/cuti/potong",      "CutiController@potongForm",   [AuthMiddleware::class, HrdOnly::class]);
+$router->post("/cuti/potong",      "CutiController@potongStore",  [AuthMiddleware::class, CsrfMiddleware::class, HrdOnly::class]);
 $router->get ("/cuti/{id}/edit",   "CutiController@editForm", [AuthMiddleware::class, HrdOnly::class]);
 $router->post("/cuti/{id}/edit",   "CutiController@update",   [AuthMiddleware::class, CsrfMiddleware::class, HrdOnly::class]);
 $router->get ("/cuti/{id}/lihat",  "CutiController@show",     [AuthMiddleware::class]);

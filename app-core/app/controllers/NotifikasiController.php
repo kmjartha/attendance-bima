@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Models\Announcement;
+use App\Models\LeaveDeduction;
 use App\Models\NotificationRead;
 
 class NotifikasiController extends Controller
@@ -27,7 +28,7 @@ class NotifikasiController extends Controller
     {
         $u = user();
         $nid = (int)$id;
-        if (!in_array($type, ['announcement', 'leave_status'], true) || $nid <= 0) {
+        if (!in_array($type, ['announcement', 'leave_status', 'leave_deduction'], true) || $nid <= 0) {
             return $this->notFound();
         }
 
@@ -46,6 +47,25 @@ class NotifikasiController extends Controller
                 'title' => 'Detail Notifikasi',
                 'type'  => 'announcement',
                 'item'  => $announcement,
+            ], $layout);
+        }
+
+        if ($type === 'leave_deduction') {
+            $row = null;
+            try {
+                $row = (new LeaveDeduction())->findWithHr($nid);
+            } catch (\Throwable $e) {
+                $row = null;
+            }
+            // Hanya karyawan yg dipotong yang boleh membuka notifikasinya.
+            if (!$row || (int)$row['user_id'] !== (int)$u['id']) {
+                return $this->notFound();
+            }
+
+            return $this->render('notifikasi.show', [
+                'title' => 'Detail Notifikasi',
+                'type'  => 'leave_deduction',
+                'item'  => $row,
             ], $layout);
         }
 
@@ -96,7 +116,7 @@ class NotifikasiController extends Controller
         $u    = user();
         $type = (string)$this->input('type', '');
         $id   = (int)$this->input('id', 0);
-        if (!in_array($type, ['announcement','leave_status'], true) || $id <= 0) {
+        if (!in_array($type, ['announcement','leave_status','leave_deduction'], true) || $id <= 0) {
             return $this->json(['ok' => false], 400);
         }
         (new NotificationRead())->markRead((int)$u['id'], $type, $id);

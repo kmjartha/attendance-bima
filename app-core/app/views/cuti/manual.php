@@ -25,7 +25,7 @@
 </style>
 
 <div class="page-head mb-3">
-  <h2 class="mb-1">Input Cuti Manual</h2>
+  <h2 class="mb-1">Input Cuti</h2>
   <div class="text-muted-soft">Lihat riwayat cuti karyawan &amp; input cuti baru langsung — cocok utk kejadian mendadak/force majeure.</div>
 </div>
 

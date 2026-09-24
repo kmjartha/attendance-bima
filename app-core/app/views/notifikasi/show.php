@@ -3,7 +3,9 @@
   <div>
     <h2 class="mb-1">Detail Notifikasi</h2>
     <div class="text-muted-soft" style="font-size:.85rem">
-      <?= $type === 'announcement' ? 'Pengumuman resmi dari HRD/Kepsek' : 'Status pengajuan cuti Anda' ?>
+      <?php if ($type === 'announcement'): ?>Pengumuman resmi dari HRD/Kepsek
+      <?php elseif ($type === 'leave_deduction'): ?>Pemotongan jatah cuti oleh HRD
+      <?php else: ?>Status pengajuan cuti Anda<?php endif; ?>
     </div>
   </div>
 </div>
@@ -22,6 +24,47 @@
     <h3 class="mb-3"><?= e($item['judul']) ?></h3>
     <div class="text-muted-soft" style="white-space:pre-line; line-height:1.7;">
       <?= nl2br(e($item['isi'])) ?>
+    </div>
+  <?php elseif ($type === 'leave_deduction'): ?>
+    <div class="d-flex flex-column gap-2 mb-3">
+      <div class="text-muted-soft" style="font-size:.85rem;"><?= e(format_date_id($item['created_at'], true)) ?></div>
+      <h3 class="mb-0">Jatah Cuti Dikurangi</h3>
+      <div class="badge bg-warning text-dark" style="width:max-content; font-size:.78rem; padding:.4rem .75rem; border-radius:999px;">
+        −<?= (int)$item['jumlah_hari'] ?> HARI
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <div class="form-field">
+          <label class="text-muted-soft">Jumlah Dipotong</label>
+          <div class="form-control-clean" style="background: var(--surface-2);"><?= (int)$item['jumlah_hari'] ?> hari</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="form-field">
+          <label class="text-muted-soft">Sisa Cuti</label>
+          <div class="form-control-clean" style="background: var(--surface-2);">
+            <?= (int)$item['sisa_sebelum'] ?> → <strong><?= (int)$item['sisa_sesudah'] ?> hari</strong>
+          </div>
+        </div>
+      </div>
+      <?php if (!empty($item['hr_nama'])): ?>
+        <div class="col-12 col-md-6">
+          <div class="form-field">
+            <label class="text-muted-soft">Dilakukan oleh</label>
+            <div class="form-control-clean" style="background: var(--surface-2);"><?= e($item['hr_nama']) ?></div>
+          </div>
+        </div>
+      <?php endif; ?>
+      <div class="col-12">
+        <div class="form-field">
+          <label class="text-muted-soft">Alasan</label>
+          <div class="form-control-clean" style="background: var(--surface-2); white-space:pre-line;">
+            <?= nl2br(e($item['alasan'])) ?>
+          </div>
+        </div>
+      </div>
     </div>
   <?php else: ?>
     <div class="d-flex flex-column gap-2 mb-3">

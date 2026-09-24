@@ -6,6 +6,7 @@ use App\Core\Controller;
 use App\Core\Validator;
 use App\Core\App;
 use App\Models\Attendance;
+use App\Models\LeaveDeduction;
 use App\Models\LeaveRequest;
 use App\Models\User;
 use App\Models\Holiday;
@@ -129,7 +130,7 @@ class CutiController extends Controller
         return $this->redirect('/cuti');
     }
 
-    /** GET /cuti/manual — HRD: lihat riwayat & input cuti baru langsung utk satu karyawan */
+    /** GET /cuti/manual — HRD: Input Cuti (lihat riwayat & input cuti baru langsung utk satu karyawan) */
     public function manualCreate(): string
     {
         $userModel = new User();
@@ -154,7 +155,7 @@ class CutiController extends Controller
         $holidays = array_column((new Holiday())->allOrdered(), 'tanggal');
 
         return $this->render('cuti.manual', [
-            'title'          => 'Input Cuti Manual',
+            'title'          => 'Input Cuti',
             'karyawan'       => $karyawan,
             'selectedUserId' => $selectedUserId,
             'selectedUser'   => $selectedUser,
@@ -247,6 +248,98 @@ class CutiController extends Controller
         $n = count($dates);
         $this->flash('success', "Cuti manual berhasil diinput untuk {$n} hari dan langsung disetujui.");
         return $this->redirect('/cuti/manual?user_id=' . $userId);
+    }
+
+    /** GET /cuti/potong — HRD: kurangi jatah cuti seorang karyawan (+ riwayat pemotongannya) */
+    public function potongForm(): string
+    {
+        $me = (int)user()['id'];
+
+        // HRD tidak memotong jatah cuti dirinya sendiri.
+        $karyawan = array_values(array_filter(
+            (new User())->allWithRole(),
+            fn($k) => (int)$k['id'] !== $me
+        ));
+
+        $selectedUserId = (int)($_GET['user_id'] ?? 0);
+        $selectedUser   = null;
+        $history        = [];
+
+        if ($selectedUserId && $selectedUserId !== $me) {
+            $selectedUser = (new User())->findWithRole($selectedUserId);
+            if ($selectedUser) {
+                try {
+                    $history = (new LeaveDeduction())->listForUser($selectedUserId);
+                } catch (\Throwable $e) {
+                    // Tabel belum ada (migrasi belum dijalankan) — form tetap tampil.
+                    $history = [];
+                }
+            } else {
+                $selectedUserId = 0;
+            }
+        } else {
+            $selectedUserId = 0;
+        }
+
+        return $this->render('cuti.potong', [
+            'title'          => 'Potong Cuti',
+            'karyawan'       => $karyawan,
+            'selectedUserId' => $selectedUserId,
+            'selectedUser'   => $selectedUser,
+            'history'        => $history,
+        ]);
+    }
+
+    /** POST /cuti/potong — simpan pemotongan; karyawan target otomatis dapat notifikasi */
+    public function potongStore(): string
+    {
+        $me     = (int)user()['id'];
+        $userId = (int)($_POST['user_id'] ?? 0);
+        $rawDays = trim((string)($_POST['jumlah_hari'] ?? ''));
+        $alasan = trim((string)($_POST['alasan'] ?? ''));
+
+        $v = Validator::make($_POST, [
+            'user_id' => 'required',
+            'alasan'  => 'required|max:1000',
+        ]);
+        if (mb_strlen($alasan) < 5) {
+            $v->addError('alasan', 'Alasan pemotongan wajib diisi (minimal 5 karakter).');
+        }
+
+        $days = 0;
+        if ($rawDays === '' || !ctype_digit($rawDays) || (int)$rawDays < 1) {
+            $v->addError('jumlah_hari', 'Jumlah hari harus berupa angka bulat minimal 1.');
+        } else {
+            $days = (int)$rawDays;
+        }
+
+        $target = $userId ? (new User())->find($userId) : null;
+        if (!$target) {
+            $v->addError('user_id', 'Karyawan tidak ditemukan.');
+        } elseif ($userId === $me) {
+            $v->addError('user_id', 'Anda tidak dapat memotong jatah cuti diri sendiri.');
+        } elseif ($days > 0 && $days > (int)$target['jumlah_cuti']) {
+            $v->addError('jumlah_hari', 'Jumlah potongan melebihi sisa cuti karyawan (' . (int)$target['jumlah_cuti'] . ' hari).');
+        }
+
+        if ($v->fails()) {
+            $_SESSION['_old']    = $_POST;
+            $_SESSION['_errors'] = $v->errors();
+            $this->flash('error', 'Periksa kembali isian Anda.');
+            return $this->redirect('/cuti/potong' . ($userId ? '?user_id=' . $userId : ''));
+        }
+
+        // Pengecekan sisa cuti diulang di dalam transaksi (dgn row-lock) di model.
+        $res = (new LeaveDeduction())->deduct($userId, $days, mb_substr($alasan, 0, 1000), $me);
+        if (!$res['ok']) {
+            $_SESSION['_old'] = $_POST;
+            $this->flash('error', $res['error']);
+            return $this->redirect('/cuti/potong?user_id=' . $userId);
+        }
+
+        unset($_SESSION['_old'], $_SESSION['_errors']);
+        $this->flash('success', "Jatah cuti {$target['nama']} dipotong {$days} hari (sisa {$res['sisa_sesudah']} hari). Notifikasi terkirim ke karyawan.");
+        return $this->redirect('/cuti/potong?user_id=' . $userId);
     }
 
     /** GET /cuti/{id}/lihat — lihat detail cuti (read-only). Pemilik cuti sendiri, atau role verifikator. */

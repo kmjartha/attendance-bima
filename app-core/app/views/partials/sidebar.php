@@ -1,4 +1,10 @@
-<?php $u = user(); $role = user_role(); ?>
+<?php
+  $u = user(); $role = user_role();
+  // Menu "Input Cuti" (HRD) punya 2 submenu: Input Cuti & Potong Cuti.
+  $__onInput  = is_active('/cuti/manual') !== '';
+  $__onPotong = is_active('/cuti/potong') !== '';
+  $__inCutiMenu = $__onInput || $__onPotong;
+?>
 <aside class="sidebar">
   <div class="sidebar-brand">
     <div class="logo">SA</div>
@@ -21,7 +27,7 @@
       <a href="<?= url('/absensi/riwayat') ?>" class="<?= is_active('/absensi/riwayat') ?>">
         <i class="bi bi-clock-history"></i> Riwayat Absensi
       </a>
-      <a href="<?= url('/cuti') ?>" class="<?= is_active('/cuti') ?>">
+      <a href="<?= url('/cuti') ?>" class="<?= (is_active('/cuti') !== '' && !$__inCutiMenu) ? 'active' : '' ?>">
         <i class="bi bi-calendar-event"></i> Cuti / Sakit
       </a>
     <?php endif; ?>
@@ -52,9 +58,20 @@
     <?php if (in_array($role, ['HRD','Supervisor','Kepsek'], true)): ?>
       <div class="group-label">Pengelolaan</div>
       <?php if (has_role('HRD')): ?>
-        <a href="<?= url('/cuti/manual') ?>" class="<?= is_active('/cuti/manual') ?>">
-          <i class="bi bi-calendar-plus"></i> Input Cuti Manual
+        <a href="#nav-input-cuti" class="nav-parent <?= $__inCutiMenu ? 'is-current' : '' ?>"
+           data-bs-toggle="collapse" role="button"
+           aria-expanded="<?= $__inCutiMenu ? 'true' : 'false' ?>" aria-controls="nav-input-cuti">
+          <i class="bi bi-calendar-plus"></i> Input Cuti
+          <i class="bi bi-chevron-down chev"></i>
         </a>
+        <div class="collapse nav-sub <?= $__inCutiMenu ? 'show' : '' ?>" id="nav-input-cuti">
+          <a href="<?= url('/cuti/manual') ?>" class="<?= $__onInput ? 'active' : '' ?>">
+            <i class="bi bi-calendar-plus"></i> Input Cuti
+          </a>
+          <a href="<?= url('/cuti/potong') ?>" class="<?= $__onPotong ? 'active' : '' ?>">
+            <i class="bi bi-calendar-minus"></i> Potong Cuti
+          </a>
+        </div>
       <?php endif; ?>
       <a href="<?= url('/verifikasi-cuti') ?>" class="<?= is_active('/verifikasi-cuti') ?>">
         <i class="bi bi-check2-square"></i> Verifikasi Cuti

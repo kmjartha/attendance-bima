@@ -15,6 +15,10 @@ each file in phpMyAdmin without needing to click into a database first):
    The migration intentionally does not assume a database name, so it works
    with both local and production database names.
 
+5. `migration_potong_cuti.sql` — adds the `leave_deductions` table used by the
+   HRD "Potong Cuti" feature (deduct an employee's leave balance + notify them).
+   Like #4, select the application database first; it does not assume a name.
+
    After importing #3, also run these once via SSH (PHP scripts, not SQL —
    phpMyAdmin can't run these):
    ```

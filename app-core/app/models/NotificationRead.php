@@ -6,8 +6,8 @@ use App\Core\Model;
 
 /**
  * Tracking notifikasi yang sudah dibaca per user.
- * type: 'announcement' | 'leave_status'
- * ref_id: id record terkait (announcements.id atau leave_requests.id)
+ * type: 'announcement' | 'leave_status' | 'leave_deduction'
+ * ref_id: id record terkait (announcements.id, leave_requests.id, atau leave_deductions.id)
  */
 class NotificationRead extends Model
 {
@@ -72,8 +72,26 @@ class NotificationRead extends Model
         $stmt->execute([$userId]);
         $cuti = $stmt->fetchAll();
 
-        $readAnn  = $this->readIds($userId, 'announcement');
-        $readCuti = $this->readIds($userId, 'leave_status');
+        // Pemotongan jatah cuti oleh HRD milik user ini. Dibungkus try/catch
+        // supaya halaman notifikasi tetap jalan kalau migrasi belum dijalankan.
+        $potong = [];
+        try {
+            $stmt = $db->prepare(
+                "SELECT ld.id, ld.jumlah_hari, ld.alasan, ld.created_at, h.nama AS hr_nama
+                 FROM leave_deductions ld
+                 LEFT JOIN users h ON h.id = ld.deducted_by
+                 WHERE ld.user_id = ?
+                 ORDER BY ld.created_at DESC, ld.id DESC LIMIT 30"
+            );
+            $stmt->execute([$userId]);
+            $potong = $stmt->fetchAll();
+        } catch (\Throwable $e) {
+            $potong = [];
+        }
+
+        $readAnn    = $this->readIds($userId, 'announcement');
+        $readCuti   = $this->readIds($userId, 'leave_status');
+        $readPotong = $this->readIds($userId, 'leave_deduction');
 
         $feed = [];
         foreach ($ann as $a) {
@@ -111,6 +129,24 @@ class NotificationRead extends Model
                 'url'        => url('/notifikasi/leave_status/' . $c['id']),
                 'created_at' => $c['created_at'],
                 'is_read'    => in_array((int)$c['id'], $readCuti, true),
+            ];
+        }
+
+        foreach ($potong as $p) {
+            $oleh   = trim((string)($p['hr_nama'] ?? ''));
+            $alasan = trim((string)($p['alasan'] ?? ''));
+            $feed[] = [
+                'type'       => 'leave_deduction',
+                'ref_id'     => (int)$p['id'],
+                'judul'      => 'Jatah Cuti Dikurangi',
+                'isi'        => 'Jatah cuti Anda dikurangi ' . (int)$p['jumlah_hari'] . ' hari' .
+                                ($oleh !== '' ? ' oleh ' . $oleh : '') .
+                                ($alasan !== '' ? ". Alasan: {$alasan}" : '.'),
+                'icon'       => 'bi-calendar-minus-fill',
+                'tone'       => 'warning',
+                'url'        => url('/notifikasi/leave_deduction/' . $p['id']),
+                'created_at' => $p['created_at'],
+                'is_read'    => in_array((int)$p['id'], $readPotong, true),
             ];
         }
 
