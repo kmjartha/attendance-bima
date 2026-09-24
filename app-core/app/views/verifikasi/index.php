@@ -39,7 +39,7 @@
     <table class="table align-middle mb-0">
       <thead style="background:var(--surface-2)">
         <tr>
-          <th>Pengaju</th><th>Jenis</th><th>Periode</th><th>Alasan</th>
+          <th>Pengaju</th><th>Jenis</th><th>Periode</th><th>Alasan</th><th>Lampiran</th>
           <th>Status</th><th class="text-end">Aksi</th>
         </tr>
       </thead>
@@ -55,6 +55,15 @@
               <?= format_leave_dates($r['tanggal_list'], $r['tanggal_mulai'], $r['tanggal_selesai']) ?>
             </td>
             <td style="max-width:280px"><?= e($r['alasan']) ?></td>
+            <td style="min-width:140px">
+              <?php if (!empty($r['file_surat'])): ?>
+                <a href="<?= e(upload_url($r['file_surat'])) ?>" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
+                  <i class="bi bi-paperclip"></i> Lihat Lampiran
+                </a>
+              <?php else: ?>
+                <span class="text-muted-soft">-</span>
+              <?php endif; ?>
+            </td>
             <td>
               <?= status_badge($r['status']) ?>
               <?php if ($r['catatan']): ?>
