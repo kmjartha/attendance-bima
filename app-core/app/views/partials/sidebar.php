@@ -66,7 +66,7 @@
         </a>
         <div class="collapse nav-sub <?= $__inCutiMenu ? 'show' : '' ?>" id="nav-input-cuti">
           <a href="<?= url('/cuti/manual') ?>" class="<?= $__onInput ? 'active' : '' ?>">
-            <i class="bi bi-calendar-plus"></i> Input Cuti
+            <i class="bi bi-calendar-plus"></i> Input Cuti Manual
           </a>
           <a href="<?= url('/cuti/potong') ?>" class="<?= $__onPotong ? 'active' : '' ?>">
             <i class="bi bi-calendar-minus"></i> Potong Cuti
